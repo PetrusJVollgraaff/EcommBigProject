@@ -22,25 +22,11 @@ function createUniqueFolder(baseName) {
   return folderPath;
 }
 
-// ✅ Multer file filter (only images)
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|gif|webp/;
-  const extname = allowedTypes.test(
-    path.extname(file.originalname).toLowerCase()
-  );
-  const mimetype = allowedTypes.test(file.mimetype);
-
-  if (extname && mimetype) {
-    cb(null, true);
-  } else {
-    cb(null, false);
-  }
-};
-
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     if (!req.uploadFolder) {
-      const baseName = file.originalname || "images"; // optional name from client
+      const baseName =
+        path.extname(file.originalname).toLowerCase() || "images"; // optional name from client
       req.uploadFolder = createUniqueFolder(baseName);
     }
 
@@ -69,6 +55,8 @@ const upload = multer({
   },
 }); // 5MB
 
+router.use(express.json());
+
 router.use(
   "/static",
   express.static(path.join(projectRoot, "/views/backend/pages/media_manager"))
@@ -81,8 +69,8 @@ router.get("/", (req, res) => {
   });
 });
 
-router.get("/getmedia", (req, res) => {
-  var products = [
+router.get("/getmedias", (req, res) => {
+  var medias = [
     {
       id: 1,
       name: "img1",
@@ -94,7 +82,7 @@ router.get("/getmedia", (req, res) => {
       path: "/static/images/img2/thumbs.jpg",
     },
   ];
-  res.json(products);
+  res.json(medias);
 });
 
 router.post("/addmedia", (req, res) => {
@@ -115,10 +103,8 @@ router.post("/addmedia", (req, res) => {
   });
 });
 
-router.post("/removemedia", (req, res) => {
+router.delete("/removemedia", (req, res) => {
   const { id } = req.body;
-
-  console.log("hello", req.params, id, req.query?.id);
   res.json({ status: "success" });
 });
 

@@ -15,14 +15,38 @@ router.get("/", (req, res) => {
   });
 });
 
+router.use(express.json());
+
 router.get("/getproducts", (req, res) => {
-  var products = [];
+  var products = [
+    {
+      id: 1,
+      name: "Product One",
+      image: {
+        id: 1,
+        path: "/static/images/img1/thumbs.png",
+      },
+    },
+    {
+      id: 2,
+      name: "Product Two",
+      image: {
+        id: 2,
+        path: "/static/images/img2/thumbs.jpg",
+      },
+    },
+  ];
   res.json(products);
 });
 
 router.post("/addproduct", (req, res) => {
   var products = [];
   res.json(products);
+});
+
+router.delete("/removeproduct", (req, res) => {
+  const { id } = req.body;
+  res.json({ status: "success" });
 });
 
 module.exports = router;

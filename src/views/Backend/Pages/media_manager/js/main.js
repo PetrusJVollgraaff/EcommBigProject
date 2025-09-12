@@ -82,7 +82,7 @@ class MediaManager {
   }
 
   #getMedia() {
-    fetch("/modules/mediamanager/getmedia")
+    fetch("/modules/mediamanager/getmedias")
       .then((response) => response.json())
       .then((response) => this.#build(response));
   }
@@ -103,9 +103,9 @@ class MediaManager {
     fetch("/modules/mediamanager/removemedia", {
       method: "DELETE",
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Type": "application/json",
       },
-      body: new URLSearchParams({ id, name: "Delete MEdia" }),
+      body: JSON.stringify({ id, name: "Delete MEdia" }),
     })
       .then((response) => response.json())
       .then((response) => console.log(response));

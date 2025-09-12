@@ -1,0 +1,17 @@
+html {
+  height: 100%;
+}
+body {
+  background-color: aqua;
+  display: flex;
+  height: 100%;
+  margin: 0px;
+}
+
+body > nav {
+  flex-basis: 300px;
+  background-color: aliceblue;
+}
+body > main {
+  flex-basis: auto;
+}

@@ -1,24 +1,141 @@
-class MediaManager {
-  constructor() {
+class Media {
+  #ElmP;
+  #Elm;
+  #Data = {};
+  #BtnDelete;
+  #callback = () => {};
+
+  constructor({ elmP, obj }, callback = () => {}) {
+    this.#ElmP = elmP;
+    this.#Data = { ...obj };
+    this.#callback = callback;
+
     this.#init();
   }
 
   #init() {
+    this.#buildElm();
+    this.#ElmP.appendChild(this.#Elm);
+    this.#eventListener();
+  }
+
+  #buildElm() {
+    this.#Elm = createDOMElement({
+      attributes: {
+        "data-id": this.#Data.id,
+        class: "media_block",
+      },
+    });
+    this.#Elm.appendChild(
+      createDOMElement({
+        type: "img",
+        attributes: {
+          src: this.#Data.path,
+        },
+      })
+    );
+
+    this.#Elm.appendChild(
+      createDOMElement({ type: "p", text: this.#Data.name })
+    );
+
+    this.#BtnDelete = createDOMElement({
+      type: "button",
+      attributes: { class: "btn_delete" },
+      text: "X",
+    });
+
+    this.#Elm.appendChild(this.#BtnDelete);
+  }
+
+  #eventListener() {
+    this.#BtnDelete.addEventListener("click", (evt) => {
+      this.#callback({ action: "delete", id: this.#Data.id });
+    });
+  }
+}
+
+class MediaManager {
+  #Imgs = [];
+  #FileInput;
+  #btnAddmedia = document.getElementById("btn_addmedia");
+  #Elm = document.getElementById("media_ctn");
+  constructor() {
+    this.#InputFile();
+    this.#init();
+  }
+
+  #init() {
+    this.#eventListener();
     this.#getMedia();
+  }
+
+  #InputFile() {
+    this.#FileInput = createDOMElement({
+      type: "input",
+      attributes: {
+        type: "file",
+        accept: "image/*",
+        multiple: "multiple",
+      },
+    });
   }
 
   #getMedia() {
     fetch("/modules/mediamanager/getmedia")
-      .then((response) => response.json)
+      .then((response) => response.json())
+      .then((response) => this.#build(response));
+  }
+
+  #build(data) {
+    data.forEach((obj) => {
+      this.#Imgs.push(
+        new Media({ elmP: this.#Elm, obj }, (data) => {
+          if (data.action == "delete") {
+            this.#removeImage(data.id);
+          }
+        })
+      );
+    });
+  }
+
+  #removeImage(id) {
+    fetch("/modules/mediamanager/removemedia", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({ id, name: "Delete MEdia" }),
+    })
+      .then((response) => response.json())
       .then((response) => console.log(response));
   }
 
-  #build() {}
+  #uploadMedia(files) {
+    const formData = new FormData();
+    for (const file of files) {
+      formData.append("images", file);
+    }
 
-  #eventListener() {}
+    fetch("/modules/mediamanager/addmedia", {
+      method: "POST",
+      body: formData,
+    })
+      .then((response) => response.json())
+      .then((response) => console.log(response));
+  }
+
+  #eventListener() {
+    this.#btnAddmedia.addEventListener("click", () => {
+      this.#FileInput.click();
+    });
+
+    this.#FileInput.addEventListener("change", (evt) => {
+      this.#uploadMedia(evt.target.files);
+    });
+  }
 }
 
 document.addEventListener("DOMContentLoaded", (evt) => {
-  console.log("world hello");
   new MediaManager();
 });

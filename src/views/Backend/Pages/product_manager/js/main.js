@@ -125,7 +125,6 @@ class ProductManager {
   }
 
   #build(data) {
-    console.log("hello", data);
     data.forEach((obj) => {
       this.#Products.push(
         new Product({ elmP: this.#Elm, obj }, (data) => {
@@ -134,7 +133,7 @@ class ProductManager {
           }
 
           if (data.action == "edit") {
-            this.#modalProduct(data);
+            this.#getProductDetails(data.id);
           }
         })
       );
@@ -171,13 +170,35 @@ class ProductManager {
       .then((response) => console.log(response));
   }
 
-  #modalProduct(data) {
-    new ProductEditor({ action: data.action }, (data) => {});
+  #getProductDetails(id) {
+    fetch("/modules/productmanager/getproduct", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.status == "success") {
+          this.#modalProduct({ action: "edit", data: data.product });
+        }
+      });
+  }
+
+  #modalProduct({ action, data = null }) {
+    new ProductEditor({ action: action, data }, (data) => {
+      if (action == "edit") {
+        this.#editProduct(data.formData);
+      } else {
+        this.#addProduct(data.formData);
+      }
+    });
   }
 
   #eventListener() {
     this.#btnAddmedia.addEventListener("click", () => {
-      this.#modalProduct({ action: "create", id: 0 });
+      this.#modalProduct({ action: "create" });
     });
   }
 }

@@ -21,7 +21,7 @@
 
 #product_ctn > .product_block > img {
   width: 250px;
-  height: 200px;
+  height: 175px;
   object-fit: contain;
 }
 

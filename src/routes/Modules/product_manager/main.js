@@ -3,6 +3,26 @@ const path = require("path");
 const router = express.Router();
 
 const projectRoot = path.join(__dirname, "../../..");
+
+var products = [
+  {
+    id: 1,
+    name: "Product One",
+    image: {
+      id: 1,
+      path: "/static/images/img1/thumbs.png",
+    },
+  },
+  {
+    id: 2,
+    name: "Product Two",
+    image: {
+      id: 2,
+      path: "/static/images/img2/thumbs.jpg",
+    },
+  },
+];
+
 router.use(
   "/static",
   express.static(path.join(projectRoot, "/views/backend/pages/product_manager"))
@@ -18,25 +38,19 @@ router.get("/", (req, res) => {
 router.use(express.json());
 
 router.get("/getproducts", (req, res) => {
-  var products = [
-    {
-      id: 1,
-      name: "Product One",
-      image: {
-        id: 1,
-        path: "/static/images/img1/thumbs.png",
-      },
-    },
-    {
-      id: 2,
-      name: "Product Two",
-      image: {
-        id: 2,
-        path: "/static/images/img2/thumbs.jpg",
-      },
-    },
-  ];
   res.json(products);
+});
+
+router.post("/getproduct", (req, res) => {
+  const { id } = req.body;
+
+  var product = products.find((obj) => obj.id == id);
+  console.log(product, id);
+  if (product) {
+    res.json({ status: "success", product });
+  } else {
+    res.json({ status: "error", message: "Product not found." });
+  }
 });
 
 router.post("/addproduct", (req, res) => {

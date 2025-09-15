@@ -117,11 +117,17 @@ class MediaManager {
       formData.append("images", file);
     }
 
-    fetch("/modules/mediamanager/addmedia", {
-      method: "POST",
-      body: formData,
-    })
-      .then((response) => response.json())
+    fetchWithProgress(
+      "/modules/mediamanager/addmedia",
+      {
+        method: "POST",
+        body: formData,
+      },
+      (percent) => {
+        console.log(percent + "%");
+      }
+    )
+      .then((text) => JSON.parse(text))
       .then((response) => console.log(response));
   }
 

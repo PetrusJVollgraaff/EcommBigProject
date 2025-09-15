@@ -4,7 +4,9 @@ export function CreateProductsDB(db) {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT UNIQUE NOT NULL,
             instock INTEGER DEFAULT 0
+            code TEXT NOT NULL,
             onspecial BOOLEAN DEFAULT '0',
+            showonline BOOLEAN DEFAULT '0',
             create_by_userid INTEGER NOT NULL,
             create_at DATEIME DEFAULT CURRENT_TIMESTAMP
             deleted_by_userid INTEGER DEFAULT NULL

@@ -20,6 +20,8 @@ export function CreateMediaDB(db) {
             id INTEGER PRIMARY KEY AUTOINCREMENT,   
             media_id INTEGER NOT NULL,
             modules_id INTEGER NOT NULL,
+            order INTEGER 0,
+            function_as TEXT DEFAULT NULL
             create_by_userid INTEGER NOT NULL,
             create_at DATEIME DEFAULT CURRENT_TIMESTAMP
             deleted_by_userid INTEGER DEFAULT NULL

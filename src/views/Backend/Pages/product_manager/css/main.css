@@ -40,3 +40,38 @@
   justify-content: center;
   cursor: pointer;
 }
+
+/* Product Modal*/
+
+.product_main_tab {
+  width: 500px;
+  height: 250px;
+}
+
+.product_main_tab .top_tab {
+  display: flex;
+  gap: 1px;
+}
+
+.product_main_tab .top_tab > .tab_btn {
+  flex-basis: 50px;
+  display: flex;
+  border: 1px solid;
+  border-radius: 5px 5px 0px 0px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.product_main_tab .tab_inner:not(.active) {
+  display: none;
+}
+
+.product_main_tab .tab_inner > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.product_main_tab .tab_inner > div:last-child {
+  margin-bottom: 5px;
+}

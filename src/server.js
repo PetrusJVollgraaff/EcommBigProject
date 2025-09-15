@@ -29,7 +29,9 @@ app.use("/", FrontEndRoutes);
 
 // --- BACKEND ROUTES ---
 const BackEndRoutes = require(routepath + "/modules/main");
+const BackEndLoginRoutes = require(routepath + "/modules/login");
 app.use("/modules", BackEndRoutes);
+app.use("/edit", BackEndLoginRoutes);
 
 server.listen(PORT, () => {
   console.log(`Server started on http://localhost:${PORT}`);

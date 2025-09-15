@@ -23,6 +23,9 @@ var products = [
   },
 ];
 
+router.use(express.urlencoded({ extended: true }));
+router.use(express.json());
+
 router.use(
   "/static",
   express.static(path.join(projectRoot, "/views/backend/pages/product_manager"))
@@ -34,8 +37,6 @@ router.get("/", (req, res) => {
     layout: "backend/layout/main", // <-- switch to backend layout
   });
 });
-
-router.use(express.json());
 
 router.get("/getproducts", (req, res) => {
   res.json(products);
@@ -54,8 +55,17 @@ router.post("/getproduct", (req, res) => {
 });
 
 router.post("/addproduct", (req, res) => {
-  var products = [];
-  res.json(products);
+  const { id } = req.body;
+  console.log(id);
+
+  res.json({ status: "error", message: "Product not found." });
+});
+
+router.put("/editproduct", (req, res) => {
+  const { id } = req.body;
+  console.log(id);
+
+  res.json({ status: "error", message: "Product not found." });
 });
 
 router.delete("/removeproduct", (req, res) => {

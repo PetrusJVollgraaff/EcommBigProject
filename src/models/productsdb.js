@@ -1,5 +1,13 @@
 export function CreateProductsDB(db) {
   db.exec(`
+        CREATE TABLE IF NOT EXISTS product_manager_settings{
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            currency TEXT UNIQUE DEFAULT 'USD' NOT NULL,
+            tax_percentage INTEGER DEFAULT 0
+            show_tax_onsite BOOLEAN DEFAULT '0'
+        }
+    
+    
         CREATE TABLE IF NOT EXISTS products(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT UNIQUE NOT NULL,

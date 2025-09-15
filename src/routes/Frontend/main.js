@@ -10,4 +10,27 @@ router.get("/", (req, res) =>
   })
 );
 
+//productpages
+router.get("/products", (req, res) =>
+  res.render("./frontend/pages/products", {
+    title: "My E-commerce",
+    layout: "frontend/layout/main",
+  })
+);
+
+router.get("/products/:id", (req, res) =>
+  res.render("./frontend/pages/products", {
+    title: "My E-commerce",
+    layout: "frontend/layout/main",
+  })
+);
+
+//cart
+router.get("/cart", (req, res) =>
+  res.render("./frontend/pages/cart", {
+    title: "My E-commerce",
+    layout: "frontend/layout/main",
+  })
+);
+
 module.exports = router;

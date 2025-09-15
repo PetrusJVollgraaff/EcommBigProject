@@ -24,11 +24,9 @@ function createUniqueFolder(baseName) {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    if (!req.uploadFolder) {
-      const baseName =
-        path.extname(file.originalname).toLowerCase() || "images"; // optional name from client
-      req.uploadFolder = createUniqueFolder(baseName);
-    }
+    var ext = path.extname(file.originalname).toLowerCase();
+    const baseName = path.basename(file.originalname, ext) || "image"; // optional name from client
+    req.uploadFolder = createUniqueFolder(baseName);
 
     cb(null, req.uploadFolder);
   },
@@ -91,15 +89,16 @@ router.post("/addmedia", (req, res) => {
       return res.status(400).json({ success: false, message: err.message });
     }
 
-    const uploadedFiles = req.files.map((file) => ({
-      filename: file.filename,
-      path: file.path,
-    }));
+    const uploadedFiles = JSON.stringify(
+      req.files.map((file) => ({
+        filename: file.filename,
+        path: file.path,
+      }))
+    );
 
-    res.json({
-      folder: req.uploadFolder,
-      files: uploadedFiles,
-    });
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Content-Length", Buffer.byteLength(uploadedFiles)); // Important!
+    res.send(uploadedFiles);
   });
 });
 

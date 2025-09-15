@@ -124,6 +124,7 @@ class Modal {
       this.popupEl = this.OverDiv;
     } else {
       this.popupEl = this.CtnDiv;
+      this.#EventListener();
     }
 
     body[0].appendChild(this.popupEl);
@@ -354,6 +355,12 @@ function checkZeroValue(value) {
   num = num < 0 ? 0 : num;
 }
 
+/** Object to FormData
+ * @param {object} obj - given object
+ * @param {FormData} formData - new or existing FormData
+ * @param {string} parentKey - append to parentKey in FormData
+ * @returns {FormData} - The created FromData.
+ */
 function objectToFormData(obj, formData = new FormData(), parentKey = "") {
   for (const key in obj) {
     if (!obj.hasOwnProperty(key)) continue;

@@ -1,6 +1,7 @@
 const express = require("express");
 const path = require("path");
 const router = express.Router();
+const { db } = require("../../../db.js");
 
 const projectRoot = path.join(__dirname, "../../..");
 
@@ -39,18 +40,101 @@ router.get("/", (req, res) => {
 });
 
 router.get("/getproducts", (req, res) => {
+  const productsDb = db
+    .prepare(
+      `
+        SELECT 
+          P.id, 
+          P.name, 
+          P.onspecial,
+          P.showonline,
+          CASE 
+              WHEN M.id IS NOT NULL THEN
+                  '/static/images/'|| M.name ||'/thumb'|| M.ext
+              ELSE ''
+          END AS path 
+
+      FROM products AS P
+      LEFT JOIN media_used MU ON MU.id = P.mediaused_id AND MU.deleted_yn=0
+      LEFT JOIN media M ON M.id = MU.media_id AND M.deleted_yn=0
+      WHERE P.deleted_yn = 0 
+    `
+    )
+    .all();
+
+  const products = [];
+  for (const product of productsDb) {
+    products.push({
+      id: product["id"],
+      name: product["name"],
+      onspecial: product["onspecial"],
+      showonline: product["showonline"],
+      image: {
+        path: product["path"],
+      },
+    });
+  }
+
   res.json(products);
 });
 
 router.post("/getproduct", (req, res) => {
   const { id } = req.body;
-  var product = products.find((obj) => obj.id == id);
+  console.log(id, "hello");
+  if (id == 0) {
+    res.render("./backend/pages/product_manager/editor", {
+      title: "",
+      product: {},
+    });
+  } else {
+    const stmt = db.prepare(
+      `
+        SELECT 
+          P.id, 
+          P.name, 
+          P.desciption,
+          P.code,
+          P.onspecial,
+          P.showonline,
+          CASE 
+              WHEN M.id IS NOT NULL THEN
+                  '/static/images/'|| M.name ||'/thumb'|| M.ext
+              ELSE ''
+          END AS path 
+
+      FROM products AS P
+      LEFT JOIN media_used MU ON MU.id = P.mediaused_id AND MU.deleted_yn=0
+      LEFT JOIN media M ON M.id = MU.media_id AND M.deleted_yn=0
+      WHERE P.deleted_yn = 0 AND P.id = ?
+    `
+    );
+
+    const row = stmt.get(id);
+
+    const product = {
+      id: row["id"],
+      name: row["name"],
+      code: row["code"],
+      descript: row["desciption"],
+      onspecial: row["onspecial"],
+      showonline: row["showonline"],
+      image: {
+        path: row["path"],
+      },
+    };
+
+    res.render("./backend/pages/product_manager/editor", {
+      title: "",
+      product,
+    });
+  }
+  /*var product = products.find((obj) => obj.id == id);
 
   if (product) {
     res.json({ status: "success", product });
   } else {
     res.json({ status: "error", message: "Product not found." });
-  }
+  }*/
 });
 
 router.post("/addproduct", (req, res) => {
@@ -69,7 +153,23 @@ router.put("/editproduct", (req, res) => {
 
 router.delete("/removeproduct", (req, res) => {
   const { id } = req.body;
-  res.json({ status: "success" });
+
+  const stmt = db.prepare(`
+    UPDATE products SET deleted_at=CURRENT_TIMESTAMP, deleted_yn=1, deleted_by_userid=1
+    WHERE id=:mediaid
+    RETURNING id;
+    `);
+
+  const row = stmt.get(id);
+
+  if (row) {
+    res.json({ status: "success", message: "Product is removed." });
+  } else {
+    res.json({
+      status: "error",
+      message: "Somthing went wrong, please try again later.",
+    });
+  }
 });
 
 module.exports = router;

@@ -1,163 +1,65 @@
 class ProductEditor {
-  #productData = {
-    id: 0,
-    name: "",
-    instock: 0,
-    image: { imgid: 0, usedid: 0, path: "" },
-    code: "",
-    showonline: false,
-    onspecial: false,
-    normalprice: {
-      id: 0,
-      price: 0,
-    },
-    specialprice: null,
-  };
-
+  #productID = 0;
+  #ajaxUrl = "";
   #formELm;
   #modal;
   #formValid = true;
-  #tabs = [
+  #checkValidArr = [
     {
-      name: "main",
-      isactive: true,
-      children: [
-        {
-          order: 1,
-          name: "productname",
-          title: "Product Name",
-          elm: this.#labelinput({
-            name: "productname",
-            title: "Product Name",
-            inputattr: {
-              id: "productname",
-              type: "text",
-              name: "productname",
-              required: "required",
-              onchange: this.#setProductName.bind(this),
-            },
-          }),
-        },
-        {
-          order: 2,
-          name: "productcode",
-          title: "Product Code",
-          elm: this.#labelinput({
-            name: "productcode",
-            title: "Product Code",
-            inputattr: {
-              id: "productcode",
-              type: "text",
-              name: "productcode",
-              required: "required",
-              onchange: this.#setProductCode.bind(this),
-            },
-          }),
-        },
-        {
-          order: 3,
-          name: "productstock",
-          title: "Product Stock",
-          elm: this.#labelinput({
-            name: "productstock",
-            title: "Product Stock",
-            inputattr: {
-              id: "productstock",
-              type: "number",
-              min: 0,
-              name: "productstock",
-              required: "required",
-              onchange: this.#setProductStock.bind(this),
-            },
-          }),
-        },
-      ],
+      order: 1,
+      name: "product_name",
+      title: "Product Name",
     },
     {
-      name: "prices",
-      isactive: false,
-      children: [
-        {
-          order: 1,
-          name: "productprice",
-          title: "Price",
-          elm: this.#labelinput({
-            name: "productprice",
-            title: "Price",
-            inputattr: {
-              id: "productprice",
-              type: "number",
-              min: 0,
-              name: "productprice",
-              required: "required",
-              onchange: this.#setProductPrice.bind(this),
-            },
-          }),
-        },
+      order: 2,
+      name: "product_code",
+      title: "Product Code",
+    },
+    {
+      order: 3,
+      name: "product_stock",
+      title: "Product Stock",
+    },
+    {
+      order: 1,
+      name: "price_normal",
+      title: "Price",
+    },
 
-        {
-          order: 2,
-          name: "productspecial",
-          title: "Is Product On Special",
-          elm: this.#labelinput({
-            name: "productspecial",
-            title: "Is Product On Special",
-            inputattr: {
-              id: "productspecial",
-              type: "checkbox",
-              name: "productspecial",
-              onchange: this.#setProductOnSpecial.bind(this),
-            },
-          }),
-        },
-      ],
+    {
+      order: 2,
+      name: "price_special",
+      title: "Special Price",
     },
   ];
 
   #action;
   #callback = () => {};
-  constructor({ action = "create", data }, callback) {
-    this.#productData = { ...this.#productData, ...data };
+  constructor({ action = "create", id }, callback = () => {}) {
     this.#action = action;
     this.#callback = callback;
+    this.#productID = id;
+    this.#ajaxUrl = `/modules/productmanager/getproduct`;
     this.#init();
     console.log(this);
   }
 
-  #setProductName(evt) {
-    this.#productData.name = evt.target.value;
-  }
-
-  #setProductCode(evt) {
-    this.#productData.code = evt.target.value;
-  }
-
-  #setProductStock(evt) {
-    var num = checkZeroValue(evt.target.value);
-    this.#productData.instock = num;
-  }
-
-  #setProductPrice(evt) {
-    var num = checkZeroValue(evt.target.value);
-    this.#productData.normalprice.price = num;
-  }
-
-  #setProductOnSpecial(evt) {
-    this.#productData.onspecial = evt.target.checked;
-  }
-
   #init() {
     var _ = this;
-    this.#build();
+    //this.#build();
     this.#modal = new Modal({
       title: this.#action == "edit" ? "Edit Product" : "Create Product",
-      content: this.#formELm,
+      ajaxData: { id: this.#productID },
+      //content: this.#formELm,
+      ajaxUrl: this.#ajaxUrl,
       onOpen: (modal) => {
+        var popupEl = modal.popupEl;
+        _.#formELm = popupEl.querySelector("form");
         _.#eventListener();
       },
       buttons: [
         {
-          title: (this.#action = "edit" ? "Edit" : "Create"),
+          title: this.#action == "edit" ? "Edit" : "Create",
           form: "product_form_editor",
         },
         {
@@ -171,38 +73,10 @@ class ProductEditor {
     });
   }
 
-  #build() {
-    var _ = this;
-    this.#formTabs();
-    this.#formELm = createDOMElement({
-      type: "form",
-      attributes: {
-        novalidate: "novalidate",
-        id: "product_form_editor",
-        onsubmit: (evt) => {
-          evt.preventDefault();
-          _.#CheckFieldValid();
-          if (_.#formValid) {
-            _.#modal.disablebtn();
-
-            var formData = objectToFormData(this.#productData);
-            console.log(this.#productData);
-            console.log(formData.get("id"));
-            this.#callback({ modal: _.#modal, formData });
-          }
-
-          return false;
-        },
-      },
-    });
-
-    this.#formELm.appendChild(this.tabmainctn);
-  }
-
   #CheckFieldValid() {
+    this.#formValid = true;
     for (let field of this.#formELm.elements) {
-      var test = Object.values(this.#tabs.map((obj) => obj.children)).flat();
-      var objData = test.find((obj) => obj.name == field.name);
+      var objData = this.#checkValidArr.find((obj) => obj.name == field.name);
       if (field.willValidate && !field.checkValidity()) {
         this.#formValid = false;
         field.focus();
@@ -220,87 +94,43 @@ class ProductEditor {
     }
   }
 
-  #formTabs() {
-    this.tabmainctn = createDOMElement({
-      attributes: { class: "product_main_tab" },
-    });
-    var topTab = createDOMElement({ attributes: { class: "top_tab" } });
-    var innerTab = createDOMElement({ attributes: { class: "inner_tab" } });
-
-    this.#tabs.forEach((tab) => {
-      topTab.appendChild(
-        createDOMElement({
-          attributes: {
-            "data-tab": tab.name,
-            class: tab.isactive ? "tab_btn active" : "tab_btn",
-          },
-          text: tab.name,
-        })
-      );
-      var inner = createDOMElement({
-        attributes: {
-          "data-tab": tab.name,
-          class: tab.isactive ? "tab_inner active" : "tab_inner",
-        },
-      });
-
-      tab.children
-        .sort((a, b) => a.order - b.order)
-        .forEach((obj) => {
-          console.log(obj);
-          inner.appendChild(obj.elm);
-        });
-
-      innerTab.appendChild(inner);
-    });
-
-    this.tabmainctn.appendChild(topTab);
-    this.tabmainctn.appendChild(innerTab);
-  }
-
-  #labelinput({ name, title, inputattr = {} }) {
-    var div = createDOMElement();
-
-    div.appendChild(
-      createDOMElement({
-        type: "label",
-        attributes: {
-          for: name,
-        },
-        text: title,
-      })
-    );
-
-    div.appendChild(
-      createDOMElement({
-        type: "input",
-        attributes: inputattr,
-      })
-    );
-
-    return div;
-  }
-
   #eventListener() {
     var _ = this;
-    var tabs = this.tabmainctn.querySelectorAll(".tab_btn");
-    var innertabs = this.tabmainctn.querySelectorAll(".tab_inner");
+    this.#formELm.addEventListener("submit", (evt) => {
+      evt.preventDefault();
+      _.#CheckFieldValid();
+      if (_.#formValid) {
+        _.#modal.disablebtn();
+        var formData = new FormData(_.#formELm);
+        if (this.#productID > 0) formData.append("product_id", this.#productID);
 
-    tabs.forEach((tab, idx) => {
-      tab.addEventListener("click", (evt) => {
-        var elm = evt.target;
-        var tab = elm.getAttribute("data-tab");
+        /*fetch(this.#ajaxUrl, {
+          method: this.#productID > 0 ? "PUT" : "POST",
+          body: new URLSearchParams(formData).toString(),
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded ",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              return response.json();
+            }
 
-        for (var i = 0; i < tabs.length; i++) {
-          if (idx == i) {
-            tabs[i].classList.add("active");
-            innertabs[i].classList.add("active");
-          } else {
-            tabs[i].classList.remove("active");
-            innertabs[i].classList.remove("active");
-          }
-        }
-      });
+            const data = response.json();
+
+            // Create error manually and attach custom data
+            const error = new Error(`Response status: ${response.status}`);
+            error.data = data; // 👈 custom property
+            throw error;
+          })
+          .then((response) => console.log(response))
+          .catch((err) => {
+            console.error(err.message);
+            //this.callback(err.data);
+          });*/
+      }
+
+      return false;
     });
   }
 }
@@ -402,7 +232,7 @@ class ProductManager {
           }
 
           if (data.action == "edit") {
-            this.#getProductDetails(data.id);
+            this.#modalProduct({ action: "edit", id: data.id });
           }
         })
       );
@@ -459,14 +289,12 @@ class ProductManager {
       .then((response) => response.json())
       .then((data) => {
         if (data.status == "success") {
-          this.#modalProduct({ action: "edit", data: data.product });
         }
       });
   }
 
-  #modalProduct({ action, data = {} }) {
-    new ProductEditor({ action: action, data }, (data) => {
-      console.log(data.formData.get("id"));
+  #modalProduct({ action, id = 0 }) {
+    new ProductEditor({ action: action, id }, (data) => {
       if (action == "edit") {
         this.#editProduct({ modal: data.modal, formdata: data.formData });
       } else {

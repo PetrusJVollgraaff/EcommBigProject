@@ -9,6 +9,7 @@ async function CreateProductsDB(db) {
         
         CREATE TABLE IF NOT EXISTS products(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            mediaused_id INTEGER NOT NULL,
             name TEXT UNIQUE NOT NULL,
             desciption TEXT DEFAULT NULL,
             instock INTEGER DEFAULT 0,
@@ -20,6 +21,7 @@ async function CreateProductsDB(db) {
             deleted_by_userid INTEGER DEFAULT NULL,
             deleted_yn BOOLEAN DEFAULT '0',
             deleted_at DATEIME DEFAULT NULL,
+            FOREIGN KEY(mediaused_id) REFERENCES media_used(id),
             FOREIGN KEY(deleted_by_userid) REFERENCES users(id),
             FOREIGN KEY(create_by_userid) REFERENCES users(id)
         );

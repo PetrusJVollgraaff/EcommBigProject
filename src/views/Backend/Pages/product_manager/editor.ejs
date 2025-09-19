@@ -1,0 +1,76 @@
+<form id="product_form_editor" novalidate>
+    <div>
+        <fieldset>
+            <legend>
+                Product Info
+            </legend>
+
+            <div class="form-group">
+                <label for="product_name">Name</label>
+                <input type="text" id="product_name" name="product_name" required value="<%= product?.name || '' %>">
+            </div>
+            <br>
+            <div class="form-group">
+                <label for="product_code">Code</label>
+                <input type="text" id="product_code" name="product_code" required value="<%= product?.code || '' %>">
+            </div>
+            <br>
+            <div class="form-group">
+                <label for="product_description">Descriptiopn</label>
+                <input type="text" id="product_description" name="product_description"
+                    value="<%= product?.descript || '' %>">
+            </div>
+            <br>
+            <div class="form-group">
+                <label for="product_stock">Total in Stock</label>
+                <input type="number" id="product_stock" name="product_stock" required min="0"
+                    value="<%= product?.stock || '0' %>">
+            </div>
+            <br>
+            <div class="form-group">
+                <label for="product_show">Show online</label>
+                <input type="checkbox" id="product_show" name="product_show">
+            </div>
+            <br>
+            <div class="form-group">
+                <label for="product_special">Show online</label>
+                <input type="checkbox" id="product_special" name="product_special">
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>
+                Product Prices
+            </legend>
+            <div class="form-group">
+                <label for="price_normal">Normal Price</label>
+                <input type="number" id="price_normal" name="price_normal" required min="0">
+            </div>
+            <br>
+            <div class="form-group">
+                <label for="price_special">Special Price</label>
+                <input type="number" id="price_special" name="price_special" min="0">
+            </div>
+            <br>
+            <div class="form-group">
+                <label for="special_datestart">Specia start date</label>
+                <input type="datetime" id="special_datestart" name="special_datestart">
+            </div>
+            <br>
+            <div class="form-group">
+                <label for="special_dateend">Special end date</label>
+                <input type="datetime" id="special_dateend" name="special_dateend">
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>
+                Product images
+            </legend>
+
+            <button type="button" id="main_imgbtn">
+                Main Image
+            </button>
+        </fieldset>
+    </div>
+</form>

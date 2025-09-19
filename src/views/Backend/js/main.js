@@ -89,6 +89,7 @@ class Modal {
 
         fetch(request)
           .then(async (response) => {
+            console.log(response.ok);
             if (response.ok) {
               return response.text();
             }

@@ -1,7 +1,9 @@
 class Modal {
-  constructor(options) {
+  constructor(options, callback = () => {}) {
     this.settings = {
       ...{
+        ajaxData: null,
+        ajaxUrl: null,
         title: "Modal",
         buttons: null,
         content: null,
@@ -16,7 +18,7 @@ class Modal {
       },
       ...options,
     };
-
+    this.callback = callback;
     this.#build();
     this.popupEl = null;
 
@@ -58,18 +60,58 @@ class Modal {
   #loadContent(fallback) {
     if (this?.popupEl) {
       var contentCtn = this.popupEl.getElementsByClassName("content_ctn");
-      switch (typeof this.settings.content) {
-        case "string":
-          contentCtn[0].innerHTML = this.settings.content;
-          break;
-        case "object":
-          contentCtn[0].appendChild(this.settings.content);
-          break;
+      console.log(this.settings.content);
+      if (this.settings.content) {
+        switch (typeof this.settings.content) {
+          case "string":
+            contentCtn[0].innerHTML = this.settings.content;
+            break;
+          case "object":
+            contentCtn[0].appendChild(this.settings.content);
+            break;
+        }
+
+        this.#loadButtons();
+
+        if (typeof fallback == "function") fallback();
+        this.#appendToBody();
+      } else if (this.settings.ajaxUrl) {
+        const request = !this.settings.ajaxData
+          ? new Request(this.settings.ajaxUrl)
+          : new Request(this.settings.ajaxUrl, {
+              method: "POST",
+              body: JSON.stringify(this.settings.ajaxData),
+              headers: {
+                //"Content-Type": "application/x-www-form-urlencoded ",
+                "Content-Type": "application/json",
+              },
+            });
+
+        fetch(request)
+          .then(async (response) => {
+            if (response.ok) {
+              return response.text();
+            }
+
+            const data = await response.json();
+
+            // Create error manually and attach custom data
+            const error = new Error(`Response status: ${response.status}`);
+            error.data = data; // 👈 custom property
+            throw error;
+          })
+          .then((response) => {
+            contentCtn[0].innerHTML = response;
+            this.#loadButtons();
+
+            if (typeof fallback == "function") fallback();
+            this.#appendToBody();
+          })
+          .catch((err) => {
+            console.error(err.message);
+            this.callback(err.data);
+          });
       }
-
-      this.#loadButtons();
-
-      if (typeof fallback == "function") fallback();
     }
   }
 
@@ -109,7 +151,6 @@ class Modal {
   }
 
   open() {
-    const body = document.getElementsByTagName("body");
     if (this.settings.overlayer) {
       this.OverDiv = createDOMElement({
         attributes: {
@@ -127,13 +168,16 @@ class Modal {
       this.#EventListener();
     }
 
-    body[0].appendChild(this.popupEl);
-
     this.#loadContent(() => {
       if (typeof this.settings.onOpen == "function") {
         this.settings.onOpen(this);
       }
     });
+  }
+
+  #appendToBody() {
+    const body = document.getElementsByTagName("body");
+    body[0].appendChild(this.popupEl);
   }
 
   disablebtn() {
@@ -321,6 +365,150 @@ class AlertPopup {
 
     console.log(this.popupEl);
     this.popupEl.remove();
+  }
+}
+
+class MediaSelectorItem {
+  #elmP;
+  #elm;
+  #data = {};
+  constructor({ elmP, data }, callback = () => {}) {
+    this.#elmP = elmP;
+    this.#data = { ...this.#data, ...data };
+
+    this.#init();
+  }
+
+  #init() {
+    this.#elm = createDOMElement({
+      attributes: this.#data,
+    });
+    this.#elm.appendChild(
+      createDOMElement({ type: "img", attributes: { src: this.#data.path } })
+    );
+    this.#elm.appendChild(
+      createDOMElement({ type: "span", text: this.#data.name })
+    );
+
+    this.#elmP.appendChild(this.#elm);
+  }
+}
+
+class MediaSelector {
+  #medias = [];
+  #mediasArr = [];
+  #popElm;
+  #elmP;
+  #mainBody;
+  #settings = {
+    onSelect: () => {},
+    onBeforeOpen: () => {},
+    onOpen: () => {},
+    multiSelect: false,
+    selectedItems: null,
+    maxItems: 20,
+    hideUpload: true,
+    showExt: ["jpg", "jpeg", "png", "gif", "webp"],
+  };
+  constructor({ elm, options }) {
+    this.#elmP = elm;
+    this.#settings = {
+      ...this.#settings,
+      ...options,
+    };
+    this.#init();
+
+    console.log("Hello");
+  }
+
+  #init() {
+    this.#elmP.addEventListener("click", this.#clickedOnThis.bind(this));
+  }
+
+  #getMedia() {
+    var _ = this;
+    fetch("/modules/mediamanager/getmedias")
+      .then((response) => response.json())
+      .then((response) => {
+        _.#medias = response;
+        _.#appendMedia();
+      });
+  }
+
+  #appendMedia() {
+    this.#medias.forEach((obj) => {
+      console.log(obj);
+      this.#mediasArr.push(
+        new MediaSelectorItem({ elmP: this.#mainBody, data: obj }, (data) => {})
+      );
+    });
+
+    console.log(this.#mediasArr);
+  }
+
+  #clickedOnThis(evt) {
+    var _ = this;
+    console.log("helo");
+
+    if (typeof _.#settings.onBeforeOpen == "function") {
+      _.#settings.onBeforeOpen(
+        _.#elmP,
+        //$(".mediaSelector").last().find(".mediaMainbody"),
+        _.#settings
+      );
+    }
+
+    /**
+     * (_.#settings.multiSelect &&
+            {
+            title: "Apply",
+            click: function (modal) {
+              modal.close();
+            },
+          }
+          )
+     */
+
+    this.#popElm = new Modal(
+      {
+        title: "",
+        content:
+          '<div class="mediaSelector">' +
+          '   <div class="mediaHeader">' +
+          '     <label class="gt-label">' +
+          '       Search&nbsp;&nbsp;<input class="gt-input" name="search_media" id="search_media" type="search" placeholder="Type here to search...">' +
+          "     </label>" +
+          "   </div>" +
+          '   <div class="mediaMainbody gridView">' +
+          "     </div>" +
+          "</div>",
+        onOpen: (modal) => {
+          var popupEl = modal.popupEl;
+          _.#mainBody = popupEl.querySelector(".mediaMainbody");
+
+          setTimeout(function () {
+            if (typeof _.#settings.onBeforeOpen == "function")
+              _.#settings.onBeforeOpen(
+                _.#elmP,
+                //$(".mediaSelector").last().find(".mediaMainbody"),
+                _.#settings
+              );
+          }, 1000);
+          console.log("world");
+
+          _.#getMedia();
+        },
+        buttons: [
+          {
+            title: "Cancel",
+            click: function (modal) {
+              modal.close();
+            },
+          },
+        ],
+      },
+      (data) => {}
+    );
   }
 }
 

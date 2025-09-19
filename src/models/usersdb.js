@@ -1,16 +1,16 @@
 require("dotenv").config();
 const bcrypt = require("bcrypt");
 
-export function CreateUsersDB(db) {
-  db.exec(`
+async function CreateUsersDB(db) {
+  await db.exec(`
         CREATE TABLE IF NOT EXISTS roles(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
             actions TEXT NOT NULL,
             user_id INTEGER DEFAULT NULL,
-            create_at DATEIME DEFAULT CURRENT_TIMESTAMP
-            deleted_at DATEIME DEFAULT NULL
-            FOREIGN KEY(user_id) REFERENCES users(id),
+            create_at DATEIME DEFAULT CURRENT_TIMESTAMP,
+            deleted_at DATEIME DEFAULT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(id)
         );
         
         CREATE TABLE IF NOT EXISTS users(
@@ -18,7 +18,7 @@ export function CreateUsersDB(db) {
             username TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
             roleId INTEGER DEFAULT NULL,
-            create_at DATEIME DEFAULT CURRENT_TIMESTAMP
+            create_at DATEIME DEFAULT CURRENT_TIMESTAMP,
             deleted_at DATEIME DEFAULT NULL
         );
         
@@ -27,8 +27,8 @@ export function CreateUsersDB(db) {
             notes TEXT NOT NULL,
             moduleid INTEGER DEFAULT NULL,
             user_id INTEGER DEFAULT NULL,
-            deleted_at DATEIME DEFAULT CURRENT_TIMESTAMP
-            FOREIGN KEY(user_id) REFERENCES users(id),
+            deleted_at DATEIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(user_id) REFERENCES users(id)
         )
     `);
 
@@ -68,3 +68,5 @@ export function CreateUsersDB(db) {
     console.log("Admin already exists.");
   }
 }
+
+module.exports = { CreateUsersDB };

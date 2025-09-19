@@ -4,7 +4,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon ./src/server.js",
-    "start": "node ./src/server.js"
+    "start": "node ./src/server.js",
+    "init-db": "node ./src/scripts/initDb.js"
   },
   "author": "",
   "license": "ISC",

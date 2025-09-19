@@ -8,4 +8,4 @@ if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
 const db = new Database(path.join(dbDir, "database.sqlite"));
 db.pragma("foreign_keys = ON");
 
-module.exports = db;
+module.exports = { db };

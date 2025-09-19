@@ -10,23 +10,28 @@ const imgDir = path.join(projectRoot, "/public/images");
 if (!fs.existsSync(imgDir)) fs.mkdirSync(imgDir, { recursive: true });
 
 function createUniqueFolder(baseName) {
-  let folderPath = path.join(imgDir, baseName);
+  let folderName = baseName;
+  let folderPath = path.join(imgDir, folderName);
   let counter = 1;
 
   // Check if folder exists and create new names until we find an available one
   while (fs.existsSync(folderPath)) {
-    folderPath = path.join(imgDir, `${baseName}(${counter++})`);
+    folderName = `${baseName}(${counter++})`;
+    folderPath = path.join(imgDir, folderName);
   }
 
   fs.mkdirSync(folderPath, { recursive: true });
-  return folderPath;
+  return { folderPath, folderName };
 }
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     var ext = path.extname(file.originalname).toLowerCase();
     const baseName = path.basename(file.originalname, ext) || "image"; // optional name from client
-    req.uploadFolder = createUniqueFolder(baseName);
+    const { folderPath, folderName } = createUniqueFolder(baseName);
+    req.uploadFolder = folderPath;
+    file["folderName"] = folderName;
+    file["ext"] = ext;
 
     cb(null, req.uploadFolder);
   },
@@ -89,15 +94,23 @@ router.post("/addmedia", (req, res) => {
       return res.status(400).json({ success: false, message: err.message });
     }
 
-    const uploadedFiles = JSON.stringify(
+    //const uploadedFiles = [];
+    /*JSON.stringify(
       req.files.map((file) => ({
         filename: file.filename,
         path: file.path,
       }))
-    );
+    );*/
+
+    const uploadedFiles = req.files.map((file) => {
+      return shapeImage(file);
+    });
 
     res.setHeader("Content-Type", "application/json");
-    res.setHeader("Content-Length", Buffer.byteLength(uploadedFiles)); // Important!
+    res.setHeader(
+      "Content-Length",
+      Buffer.byteLength(JSON.stringify(uploadedFiles))
+    ); // Important!
     res.send(uploadedFiles);
   });
 });
@@ -106,5 +119,31 @@ router.delete("/removemedia", (req, res) => {
   const { id } = req.body;
   res.json({ status: "success" });
 });
+
+async function shapeImage(file) {
+  const { width, height } = await sharp(file.path).metadata();
+
+  sizes = {
+    large: { width: 1920 },
+    medium: { width: 600 },
+    thumb: { width: 150, height: 150 },
+  };
+  for (key in sizes) {
+    const thumbFull = path.join(thumbsDir, key + file.ext);
+    await sharp(file.path).resize(300, 300, { fit: "cover" }).toFile(thumbFull);
+  }
+
+  const stmt = db.prepare(
+    "INSERT INTO medias (name, type, width, height, ext, create_at, deleted_yn) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 0) RETURNING id;"
+  );
+
+  const row = stmt.get(file.folderName, "image", width, height, file.ext);
+
+  return {
+    id: row.id,
+    name: file.folderName,
+    path: `/static/images/${file.folderName}/image${file.ext}`,
+  };
+}
 
 module.exports = router;

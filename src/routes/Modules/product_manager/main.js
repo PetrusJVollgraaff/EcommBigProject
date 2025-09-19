@@ -44,9 +44,8 @@ router.get("/getproducts", (req, res) => {
 
 router.post("/getproduct", (req, res) => {
   const { id } = req.body;
-
   var product = products.find((obj) => obj.id == id);
-  console.log(product, id);
+
   if (product) {
     res.json({ status: "success", product });
   } else {

@@ -97,7 +97,7 @@ router.post("/getproduct", (req, res) => {
         SELECT 
           P.id, 
           P.name, 
-          P.desciption,
+          P.description,
           P.code,
           P.instock,
           P.onspecial,
@@ -125,7 +125,7 @@ router.post("/getproduct", (req, res) => {
       id: row["id"],
       name: row["name"],
       code: row["code"],
-      descript: row["desciption"],
+      descript: row["description"],
       onspecial: row["onspecial"] == 1,
       showonline: row["showonline"] == 1,
       image: {
@@ -168,7 +168,7 @@ router.put("/editproduct", producValidator, (req, res) => {
   } = req.body;
 
   const stmt = db.prepare(`
-      UPDATE products SET [name]=:name, [desciption]=:descript, [code]=:code, [instock]=:instock, 
+      UPDATE products SET [name]=:name, [description]=:descript, [code]=:code, [instock]=:instock, 
         [onspecial]=:onspecial, [showonline]=:showonline
       WHERE id=:id
       RETURNING id;

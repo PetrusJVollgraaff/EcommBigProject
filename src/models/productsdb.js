@@ -11,7 +11,7 @@ async function CreateProductsDB(db) {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             mediaused_id INTEGER NOT NULL,
             name TEXT UNIQUE NOT NULL,
-            desciption TEXT DEFAULT NULL,
+            description TEXT DEFAULT NULL,
             instock INTEGER DEFAULT 0,
             code TEXT NOT NULL,
             onspecial BOOLEAN DEFAULT '0',

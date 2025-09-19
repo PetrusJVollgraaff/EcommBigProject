@@ -1,3 +1,4 @@
 /node_modules
 /src/public/images
 /src/db/database.sqlite
+/.vscode

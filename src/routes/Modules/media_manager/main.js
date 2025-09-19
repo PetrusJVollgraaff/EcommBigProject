@@ -84,12 +84,12 @@ router.get("/getmedias", (req, res) => {
 });
 
 router.post("/addmedia", (req, res) => {
-  upload.array("images", 10)(req, res, (err) => {
+  upload.array("images", 10)(req, res, async (err) => {
     if (err) {
-      return res.status(400).json({ success: false, message: err.message });
+      return res.status(400).json({ status: "error", message: err.message });
     }
 
-    //const uploadedFiles = [];
+    const uploadedFiles = [];
     /*JSON.stringify(
       req.files.map((file) => ({
         filename: file.filename,
@@ -97,16 +97,27 @@ router.post("/addmedia", (req, res) => {
       }))
     );*/
 
-    const uploadedFiles = req.files.map((file) => {
-      return shapeImage(file);
+    req.files.forEach((file) => {
+      const { width, height } = sharp(file.path).metadata();
+
+      const stmt = db.prepare(`
+            INSERT INTO media (name, type, width, height, ext, create_at, deleted_yn, create_by_userid) 
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 0, 1) 
+            RETURNING id;
+      `);
+
+      const row = stmt.get(file.folderName, "image", width, height, file.ext);
+
+      shapeImage(file);
+      uploadedFiles.push({
+        id: row.id,
+        name: file.folderName,
+        path: `/static/images/${file.folderName}/image${file.ext}`,
+      });
     });
 
-    res.setHeader("Content-Type", "application/json");
-    res.setHeader(
-      "Content-Length",
-      Buffer.byteLength(JSON.stringify(uploadedFiles))
-    ); // Important!
-    res.send(uploadedFiles);
+    console.log(uploadedFiles);
+    res.status(200).json({ status: "success", images: uploadedFiles });
   });
 });
 
@@ -132,31 +143,16 @@ router.delete("/removemedia", (req, res) => {
 });
 
 async function shapeImage(file) {
-  const { width, height } = await sharp(file.path).metadata();
-
-  sizes = {
+  const sizes = {
     large: { width: 1920 },
     medium: { width: 600 },
     thumb: { width: 150 },
   };
+
   for (key in sizes) {
     const thumbFull = path.join(file.destination, key + file.ext);
     await sharp(file.path).resize(300, 300, { fit: "cover" }).toFile(thumbFull);
   }
-
-  const stmt = db.prepare(`
-    INSERT INTO media (name, type, width, height, ext, create_at, deleted_yn, create_by_userid) 
-    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 0, 1) 
-    RETURNING id;
-    `);
-
-  const row = stmt.get(file.folderName, "image", width, height, file.ext);
-
-  return {
-    id: row.id,
-    name: file.folderName,
-    path: `/static/images/${file.folderName}/image${file.ext}`,
-  };
 }
 
 module.exports = router;

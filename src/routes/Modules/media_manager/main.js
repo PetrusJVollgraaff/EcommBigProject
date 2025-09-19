@@ -4,6 +4,7 @@ const fs = require("fs");
 const sharp = require("sharp");
 const multer = require("multer");
 const router = express.Router();
+const { db } = require("../../../db.js");
 
 const projectRoot = path.join(__dirname, "../../..");
 const imgDir = path.join(projectRoot, "/public/images");
@@ -73,18 +74,12 @@ router.get("/", (req, res) => {
 });
 
 router.get("/getmedias", (req, res) => {
-  var medias = [
-    {
-      id: 1,
-      name: "img1",
-      path: "/static/images/img1/thumbs.png",
-    },
-    {
-      id: 2,
-      name: "img2",
-      path: "/static/images/img2/thumbs.jpg",
-    },
-  ];
+  const medias = db
+    .prepare(
+      "SELECT id, name, '/static/images/'|| name ||'/thumb'|| ext AS path FROM media WHERE deleted_yn =0"
+    )
+    .all();
+
   res.json(medias);
 });
 
@@ -117,7 +112,23 @@ router.post("/addmedia", (req, res) => {
 
 router.delete("/removemedia", (req, res) => {
   const { id } = req.body;
-  res.json({ status: "success" });
+
+  const stmt = db.prepare(`
+    UPDATE medias SET deleted_at=CURRENT_TIMESTAMP, deleted_yn=1
+    WHERE id=:mediaid
+    RETURNING id;
+    `);
+
+  const row = stmt.get(id);
+
+  if (row) {
+    res.json({ status: "success", message: "images are removes" });
+  } else {
+    res.json({
+      status: "error",
+      message: "Somthing went wrong, please try again later.",
+    });
+  }
 });
 
 async function shapeImage(file) {
@@ -126,16 +137,18 @@ async function shapeImage(file) {
   sizes = {
     large: { width: 1920 },
     medium: { width: 600 },
-    thumb: { width: 150, height: 150 },
+    thumb: { width: 150 },
   };
   for (key in sizes) {
-    const thumbFull = path.join(thumbsDir, key + file.ext);
+    const thumbFull = path.join(file.destination, key + file.ext);
     await sharp(file.path).resize(300, 300, { fit: "cover" }).toFile(thumbFull);
   }
 
-  const stmt = db.prepare(
-    "INSERT INTO medias (name, type, width, height, ext, create_at, deleted_yn) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 0) RETURNING id;"
-  );
+  const stmt = db.prepare(`
+    INSERT INTO media (name, type, width, height, ext, create_at, deleted_yn, create_by_userid) 
+    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 0, 1) 
+    RETURNING id;
+    `);
 
   const row = stmt.get(file.folderName, "image", width, height, file.ext);
 

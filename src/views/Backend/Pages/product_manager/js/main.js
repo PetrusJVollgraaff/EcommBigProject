@@ -96,6 +96,10 @@ class ProductEditor {
 
   #eventListener() {
     var _ = this;
+    const url =
+      this.#action == "edit"
+        ? "/modules/productmanager/editproduct"
+        : "/modules/productmanager/addproduct";
     this.#formELm.addEventListener("submit", (evt) => {
       evt.preventDefault();
       _.#CheckFieldValid();
@@ -104,7 +108,7 @@ class ProductEditor {
         var formData = new FormData(_.#formELm);
         if (this.#productID > 0) formData.append("product_id", this.#productID);
 
-        /*fetch(this.#ajaxUrl, {
+        fetch(url, {
           method: this.#productID > 0 ? "PUT" : "POST",
           body: new URLSearchParams(formData).toString(),
           headers: {
@@ -127,7 +131,7 @@ class ProductEditor {
           .catch((err) => {
             console.error(err.message);
             //this.callback(err.data);
-          });*/
+          });
       }
 
       return false;

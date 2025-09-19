@@ -29,12 +29,15 @@
             <br>
             <div class="form-group">
                 <label for="product_show">Show online</label>
-                <input type="checkbox" id="product_show" name="product_show">
+                <input type="checkbox" id="product_show" name="product_show" <% if (product?.product_show) {%>
+                checked <% }%>>
             </div>
             <br>
             <div class="form-group">
-                <label for="product_special">Show online</label>
-                <input type="checkbox" id="product_special" name="product_special">
+                <label for="product_special">On Special</label>
+                <input type="checkbox" id="product_special" name="product_special"
+                    data-t="<%= product?.onspecial || 0%>" <% if (product?.onspecial) {%>
+                checked <% } %>">
             </div>
         </fieldset>
 

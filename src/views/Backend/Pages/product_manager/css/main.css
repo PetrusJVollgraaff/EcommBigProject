@@ -75,3 +75,35 @@
 .product_main_tab .tab_inner > div:last-child {
   margin-bottom: 5px;
 }
+
+/* Product Editor */
+form#product_form_editor > div {
+  display: grid;
+  grid-template-columns: 50% 50%;
+  grid-template-areas: "info price" "img img";
+  gap: 14px;
+  margin: 15px;
+}
+
+form#product_form_editor > div > fieldset:first-child {
+  grid-area: info;
+}
+
+form#product_form_editor > div > fieldset:nth-child(2) {
+  grid-area: price;
+}
+
+form#product_form_editor > div > fieldset:last-child {
+  grid-area: img;
+}
+
+form#product_form_editor #main_imgbtn {
+  border-radius: 2px;
+  width: 500px;
+  height: 500px;
+  padding: 2px;
+  background-image: var(--bg-img);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}

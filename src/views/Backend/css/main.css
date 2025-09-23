@@ -71,3 +71,25 @@ body > main {
 .modal_ctn .btn_ctn > button {
   flex: 1;
 }
+
+/* Image Selector */
+
+.mediaMainbody.gridView {
+  max-width: 1000px;
+  display: flex;
+  flex-wrap: wrap;
+  width: 500px;
+  overflow-y: auto;
+  max-height: 500px;
+}
+
+.mediaMainbody.gridView > div {
+  inline-size: 130px;
+  flex-basis: 130px;
+}
+
+.mediaMainbody.gridView > div > img {
+  inline-size: 130px;
+  block-size: 130px;
+  object-fit: contain;
+}

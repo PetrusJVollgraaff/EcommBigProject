@@ -2,7 +2,9 @@ class ProductEditor {
   #productID = 0;
   #ajaxUrl = "";
   #formELm;
+  #MainImgBtn;
   #modal;
+  #mainMediaid = 0;
   #formValid = true;
   #checkValidArr = [
     {
@@ -41,40 +43,66 @@ class ProductEditor {
     this.#productID = id;
     this.#ajaxUrl = `/modules/productmanager/getproduct`;
     this.#init();
-    console.log(this);
   }
 
   #init() {
     var _ = this;
     //this.#build();
-    this.#modal = new Modal({
-      title: this.#action == "edit" ? "Edit Product" : "Create Product",
-      ajaxData: { id: this.#productID },
-      //content: this.#formELm,
-      ajaxUrl: this.#ajaxUrl,
-      onOpen: (modal) => {
-        var popupEl = modal.popupEl;
-        _.#formELm = popupEl.querySelector("form");
-        _.#eventListener();
-      },
-      buttons: [
-        {
-          title: this.#action == "edit" ? "Edit" : "Create",
-          form: "product_form_editor",
+    this.#modal = new Modal(
+      {
+        title: this.#action == "edit" ? "Edit Product" : "Create Product",
+        ajaxData: { id: this.#productID },
+        //content: this.#formELm,
+        ajaxUrl: this.#ajaxUrl,
+        onOpen: (modal) => {
+          var popupEl = modal.popupEl;
+          _.#formELm = popupEl.querySelector("form");
+          _.#MainImgBtn = popupEl.querySelector("#main_imgbtn");
+
+          _.#mainMediaid = Number(
+            popupEl.querySelector("input#main_mediaid").value
+          );
+          popupEl.querySelector("input#main_mediaid").remove();
+
+          _.#setMediaSelector();
+          _.#eventListener();
         },
-        {
-          title: "Cancel",
-          click: function (modal) {
-            console.log("123");
-            modal.close();
+        buttons: [
+          {
+            title: this.#action == "edit" ? "Edit" : "Create",
+            form: "product_form_editor",
           },
-        },
-      ],
-    });
+          {
+            title: "Cancel",
+            click: function (modal) {
+              modal.close();
+            },
+          },
+        ],
+      },
+      (data) => {
+        if (data.status == "error") {
+          new AlertPopup({
+            title: "Warning",
+            overlayer: true,
+            content: data.message,
+          });
+        }
+      }
+    );
   }
 
   #CheckFieldValid() {
     this.#formValid = true;
+
+    const specialcheckbox = Array.from(this.#formELm.elements).find(
+      (field) => field.name == "product_special"
+    );
+
+    const specialprice = Array.from(this.#formELm.elements).find(
+      (field) => field.name == "product_special"
+    );
+
     for (let field of this.#formELm.elements) {
       var objData = this.#checkValidArr.find((obj) => obj.name == field.name);
       if (field.willValidate && !field.checkValidity()) {
@@ -92,6 +120,34 @@ class ProductEditor {
         break;
       }
     }
+
+    if (this.#formValid && specialcheckbox.checked && specialprice.value == 0) {
+      specialprice.focus();
+      new AlertPopup({
+        title: "Warning",
+        overlayer: true,
+        content: `Please provide a special price.`,
+      });
+    }
+
+    if (this.#formValid && this.#mainMediaid == 0) {
+      _.#MainImgBtn.focus();
+
+      new AlertPopup({
+        title: "Warning",
+        overlayer: true,
+        content: `Please select an Image.`,
+      });
+    }
+  }
+
+  #setMediaSelector() {
+    new MediaSelector({ elm: this.#MainImgBtn }, (data) => {
+      console.log(data);
+      this.#mainMediaid = data.id;
+      this.#MainImgBtn.setAttribute("title", data.name);
+      this.#MainImgBtn.style.backgroundImage = `url('${data.path}')`;
+    });
   }
 
   #eventListener() {
@@ -106,7 +162,10 @@ class ProductEditor {
       if (_.#formValid) {
         _.#modal.disablebtn();
         var formData = new FormData(_.#formELm);
-        if (this.#productID > 0) formData.append("product_id", this.#productID);
+        formData.append("product_id", this.#productID);
+
+        if (this.#mainMediaid > 0)
+          formData.append("main_mediaid", this.#mainMediaid);
 
         fetch(url, {
           method: this.#productID > 0 ? "PUT" : "POST",
@@ -127,7 +186,27 @@ class ProductEditor {
             error.data = data; // 👈 custom property
             throw error;
           })
-          .then((response) => console.log(response))
+          .then((response) => {
+            if (response.status == "success") {
+              //_.#callback(response.product);
+              //_.#modal.close();
+
+              new AlertPopup({
+                title: "Success",
+                overlayer: true,
+                content: "The Producted is Saved",
+                buttons: [],
+                autoClose: true,
+              });
+            } else {
+              _.#modal.enablebtn();
+              new AlertPopup({
+                title: "Error",
+                overlayer: true,
+                content: "The Producted could not be saved",
+              });
+            }
+          })
           .catch((err) => {
             console.error(err.message);
             //this.callback(err.data);
@@ -153,6 +232,21 @@ class Product {
     this.#callback = callback;
 
     this.#init();
+  }
+
+  setProduct(newData) {
+    this.#Data = { ...newData };
+    this.#remove();
+  }
+
+  #remove() {
+    const oldElm = document.querySelector(
+      '.product_block[data-id="' + this.#Data.id + '"]'
+    );
+
+    this.#buildElm();
+    oldElm.replaceWith(this.#Elm);
+    this.#eventListener();
   }
 
   #init() {
@@ -255,54 +349,31 @@ class ProductManager {
       .then((response) => console.log(response));
   }
 
-  #addProduct({ modal, formdata }) {
-    console.log(formdata.get("id"));
-    fetch("/modules/productmanager/addproduct", {
-      method: "POST",
-      body: new URLSearchParams(formdata).toString(),
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded ",
-        //"Content-Type": "application/json",
-      },
-    })
-      .then((response) => response.json())
-      .then((response) => console.log(response));
-  }
-
-  #editProduct({ modal, formdata }) {
-    fetch("/modules/productmanager/editproduct", {
-      method: "PUT",
-      body: JSON.stringify(formdata),
-      headers: {
-        //"Content-Type": "application/x-www-form-urlencoded ",
-        "Content-Type": "application/json",
-      },
-    })
-      .then((response) => response.json())
-      .then((response) => console.log(response));
-  }
-
-  #getProductDetails(id) {
-    fetch("/modules/productmanager/getproduct", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ id }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.status == "success") {
-        }
-      });
+  #editProduct(product) {
+    const idx = this.#Products.findIndex((obj) => obj.id === product.id);
+    console.log(idx);
+    if (idx > -1) {
+      console.log("hello");
+      this.#Products[idx].setProduct(product);
+    }
   }
 
   #modalProduct({ action, id = 0 }) {
-    new ProductEditor({ action: action, id }, (data) => {
+    new ProductEditor({ action: action, id }, (obj) => {
       if (action == "edit") {
-        this.#editProduct({ modal: data.modal, formdata: data.formData });
+        this.#editProduct(obj);
       } else {
-        this.#addProduct({ modal: data.modal, formdata: data.formData });
+        this.#Products.push(
+          new Product({ elmP: this.#Elm, obj }, (data) => {
+            if (data.action == "delete") {
+              this.#removeProduct(data.id);
+            }
+
+            if (data.action == "edit") {
+              this.#modalProduct({ action: "edit", id: data.id });
+            }
+          })
+        );
       }
     });
   }

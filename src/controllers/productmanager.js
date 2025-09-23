@@ -47,34 +47,7 @@ var productSQL = `
       WHERE P.deleted_yn = 0 
     `;
 
-function getproductHTML(req, res) {
-  res.render("./backend/pages/product_manager/index", {
-    title: "Media Manager",
-    layout: "backend/layout/main", // <-- switch to backend layout
-  });
-}
-
-function getProductsJSON(req, res) {
-  const productsDb = db.prepare(productSQL).all();
-
-  const products = [];
-  for (const product of productsDb) {
-    products.push(setProductJSON(product));
-  }
-
-  res.json(products);
-}
-
-function getSingleProduct(req, res) {
-  const { id } = req.body;
-
-  if (id == 0) {
-    res.render("./backend/pages/product_manager/editor", {
-      title: "",
-      product: {},
-    });
-  } else {
-    const stmt = db.prepare(`
+var productDetailSQL = `
         SELECT 
           P.id, 
           P.name, 
@@ -109,8 +82,36 @@ function getSingleProduct(req, res) {
       LEFT JOIN product_prices PP1 ON PP1.products_id = P.id AND PP1.isspecial=0 AND PP1.deleted_yn = 0
       LEFT JOIN product_prices PP2 ON PP2.products_id = P.id AND PP2.isspecial=1 AND PP2.deleted_yn = 0          
       WHERE P.deleted_yn = 0 AND P.id=:id
-    `);
+    `;
 
+function getproductHTML(req, res) {
+  res.render("./backend/pages/product_manager/index", {
+    title: "Media Manager",
+    layout: "backend/layout/main", // <-- switch to backend layout
+  });
+}
+
+function getProductsJSON(req, res) {
+  const productsDb = db.prepare(productSQL).all();
+
+  const products = [];
+  for (const product of productsDb) {
+    products.push(setProductJSON(product));
+  }
+
+  res.json(products);
+}
+
+function getSingleProduct(req, res) {
+  const { id } = req.body;
+
+  if (id == 0) {
+    res.render("./backend/pages/product_manager/editor", {
+      title: "",
+      product: {},
+    });
+  } else {
+    const stmt = db.prepare(productDetailSQL);
     const row = stmt.get({ id });
 
     if (!row) {
@@ -168,35 +169,30 @@ function editExistingProduct(req, res) {
     return res.status(400).json({ status: "error", message: errors.array() });
   }
 
-  const {
-    product_id,
-    product_name,
-    product_description,
-    product_code,
-    product_stock,
-    product_special,
-    product_show,
-  } = req.body;
-
-  const stmt = db.prepare(`
-      UPDATE products SET [name]=:name, [description]=:descript, [code]=:code, [instock]=:instock, 
-        [onspecial]=:onspecial, [showonline]=:showonline
-      WHERE id=:id
-      RETURNING id;
-    `);
-
-  const row = stmt.get({
-    id: product_id,
-    name: product_name,
-    descript: product_description,
-    code: product_code,
-    instock: Number(product_stock),
-    onspecial: typeof product_special == "undefined" ? 0 : 1,
-    showonline: typeof product_show == "undefined" ? 0 : 1,
-  });
+  const { product_id } = req.body;
+  const stmt = db.prepare(productDetailSQL);
+  const row = stmt.get({ id: product_id });
 
   if (row) {
-    res.status(200).json({ status: "success", message: "Product is Save." });
+    const found = UpdateProduct(
+      req.body,
+      row["imgid"],
+      row["imgusedid"],
+      row["normalprice"],
+      row["specialprice"]
+    );
+
+    if (found) {
+      const product = getProductJSON(product_id);
+      res
+        .status(200)
+        .json({ status: "success", message: "Product is Save.", product });
+    }
+
+    res.status(500).json({
+      status: "error",
+      message: "Somthing went wrong, Product could not be created",
+    });
   }
 
   res.status(404).json({ status: "error", message: "Product not found." });
@@ -298,7 +294,7 @@ function addNewProductSQL(body) {
     product_show,
   } = body;
 
-  mediausedId = AddImgSQL(main_mediaid);
+  let mediausedId = AddImgSQL(main_mediaid);
 
   const stmt = db.prepare(`
     INSERT INTO products([mediaused_id], [name], [instock], [description], [code], [onspecial], [showonline], [create_by_userid], [create_at], [deleted_yn])
@@ -327,6 +323,7 @@ function addNewProductSQL(body) {
 
 /** UPDATE PRODUCT DATA **/
 
+// Update Existing Product Image
 function ReplaceExistingImg(productid, newimgid, oldimgid, oldimgusedid) {
   const usedimgid = oldimgusedid;
 
@@ -337,7 +334,7 @@ function ReplaceExistingImg(productid, newimgid, oldimgid, oldimgusedid) {
                 WHERE NOT EXISTS (
                     SELECT 1
                     FROM products AS P
-                    LEFT JOIN mediaused MU ON MU.id = P.mediaused_id AND MU.deleted_yn=0
+                    LEFT JOIN media_used MU ON MU.id = P.mediaused_id AND MU.deleted_yn=0
                     LEFT JOIN medias M ON M.id = MU.media_id AND M.deleted_yn=0
                     WHERE P.deleted_yn = 0 AND P.id=:productid AND IFNULL(M.id, 0)=:imgid
                 )
@@ -351,153 +348,117 @@ function ReplaceExistingImg(productid, newimgid, oldimgid, oldimgusedid) {
   return usedimgid;
 }
 
-function ReplaceExistingPrice(productid, form, curnormprice) {}
+// Update Existsing Product Prices
+function ReplaceExistingPrice(productid, body, curnormprice) {
+  const { price_normal } = body;
+  if (price_normal != curnormprice) {
+    const stmt = db.prepare(`
+            INSERT INTO product_prices ([products_id], [price], [isspecial], [create_by_userid], [create_at], [deleted_yn])
+                SELECT :productid, :price, 0, 1, CURRENT_TIMESTAMP, 0
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM products AS P
+                    LEFT JOIN product_prices PP1 ON PP1.products_id = P.id AND PP1.isspecial=0 AND PP1.deleted_yn = 0
+                    WHERE P.deleted_yn = 0 AND P.id=:productid AND IFNULL(PP1.price, 0)=:price
+                )
+                RETURNING id;
+      `);
 
-function ReplaceExistingSpecialPrice(productid, form, curspecialprice) {}
+    stmt.run({ productid, price: price_normal });
+  }
+}
 
+// Update Existsing Product Special Prices
+function ReplaceExistingSpecialPrice(productid, body, curspecialprice) {
+  const { product_special, price_special, special_datestart, special_dateend } =
+    body;
+
+  if (typeof product_special != "undefined") {
+    if (price_special != curspecialprice) {
+      const stmt1 = db.prepare(`
+            INSERT INTO product_prices ([products_id], [price], [isspecial], [create_by_userid], [create_at], [deleted_yn])
+                SELECT :productid, :price, 0, 1, CURRENT_TIMESTAMP, 0
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM products AS P
+                    LEFT JOIN product_prices PP1 ON PP1.products_id = P.id AND PP1.isspecial=0 AND PP1.deleted_yn = 0
+                    WHERE P.deleted_yn = 0 AND P.id=:productid AND IFNULL(PP1.price, 0)=:price
+                )
+                RETURNING id;
+      `);
+
+      var row = stmt1.get({ productid, price: price_special });
+
+      const stmt2 = db.prepare(`
+            UPDATE product_prices SET [deleted_yn] = 1, [deleted_at]=CURRENT_TIMESTAMP
+            WHERE products_id = :productid AND isspecial=0 AND deleted_yn = 0 AND id!=:id
+      `);
+
+      stmt2.run({ productid, id: row.id });
+    }
+  } else {
+    const stmt = db.prepare(`
+          UPDATE product_prices SET [deleted_yn] = 1, [deleted_at]=CURRENT_TIMESTAMP
+          WHERE products_id=:productid AND isspecial=1 AND deleted_yn = 0
+      `);
+
+    stmt.run({ productid });
+  }
+}
+
+// Update Existing Product
 function UpdateProduct(
-  form,
+  body,
   curimgid,
   curimgusedid,
   curnormprice,
   curspecialprice
-) {}
+) {
+  const {
+    main_mediaid,
+    product_id,
+    product_name,
+    product_stock,
+    product_description,
+    product_code,
+    product_special,
+    product_show,
+  } = body;
 
-/*
-   ########### UPDATE PRODUCT DATA ###########
-# Update Existing Product Image
-def ReplaceExistingImg(productid, newimgid, oldimgid, oldimgusedid):
-    usedimgid = oldimgusedid
-    
-    if newimgid != oldimgid:
-            sqlnewimg =text('''
-                INSERT INTO mediaused ([media_id], [order], [function_as], [create_at], [deleted_yn])
-                SELECT :imgid, 0, 'main product image', CURRENT_TIMESTAMP, 0
-                WHERE NOT EXISTS (
-                    SELECT 1
-                    FROM products AS P
-                    LEFT JOIN mediaused MU ON MU.id = P.mediaused_id AND MU.deleted_yn=0
-                    LEFT JOIN medias M ON M.id = MU.media_id AND M.deleted_yn=0
-                    WHERE P.deleted_yn = 0 AND P.id=:productid AND IFNULL(M.id, 0)=:imgid
-                )
-                RETURNING id;
-            ''')
-            results = db.session.execute(sqlnewimg, {"productid": productid, "imgid": newimgid})
-            row = results.fetchone()
-            
-            usedimgid = row[0]
-            db.session.commit()       
-    
-    return usedimgid
+  let mediausedId = ReplaceExistingImg(
+    product_id,
+    main_mediaid,
+    curimgid,
+    curimgusedid
+  );
 
-#Update Existsing Product Prices
-def ReplaceExistingPrice(productid, form, curnormprice):
-    if form.price_normal.data != curnormprice:
-        sqlnewprice1 =text('''
-                INSERT INTO productprice ([product_id], [price], [isspecial], [create_at], [deleted_yn])
-                SELECT :productid, :price, 0, CURRENT_TIMESTAMP, 0
-                WHERE NOT EXISTS (
-                    SELECT 1
-                    FROM products AS P
-                    LEFT JOIN productprice PP1 ON PP1.product_id = P.id AND PP1.isspecial=0 AND PP1.deleted_yn = 0
-                    WHERE P.deleted_yn = 0 AND P.id=:productid AND IFNULL(PP1.price, 0)=:price
-                )
-                RETURNING id;
-            ''')
-        results = db.session.execute(sqlnewprice1, {"productid": productid, "price": form.price_normal.data, })
-        row = results.fetchone()
-        
-        db.session.commit()  
+  ReplaceExistingPrice(product_id, body, curnormprice);
+  ReplaceExistingSpecialPrice(product_id, body, curspecialprice);
 
-        sql =text('''
-                UPDATE productprice SET [deleted_yn] = 1, [deleted_at]=CURRENT_TIMESTAMP
-                WHERE product_id = :productid AND isspecial=0 AND deleted_yn = 0 AND id!=:id
-            ''')
-        db.session.execute(sql, {"productid": productid, "price": form.price_normal.data, "id": row[0] })
-        db.session.commit()  
+  const stmt = db.prepare(`
+      UPDATE products SET [name]=:name, [instock]=:instock, [description]=:descript, [code]=:code, 
+              [onspecial]=:onspecial, [showonline]=:showonline, [mediaused_id]=:mediausedid
+      WHERE id=:id
+      RETURNING id;
+  `);
 
-#Update Existsing Product Special Prices
-def ReplaceExistingSpecialPrice(productid, form, curspecialprice):
-    if form.product_special.data:
+  var row = stmt.get({
+    id: product_id,
+    mediausedid: mediausedId,
+    name: product_name,
+    instock: product_stock,
+    descript: product_description,
+    code: product_code,
+    onspecial: typeof product_special == "undefined" ? 0 : 1,
+    showonline: typeof product_show == "undefined" ? 0 : 1,
+  });
 
-        if form.price_special.data != curspecialprice:
-            sqlnewprice1 =text('''
-                    INSERT INTO productprice ([product_id], [price], [isspecial], [specialdataStart], [specialdataEnd] [create_at], [deleted_yn])
-                    SELECT :productid, :price, 1, :datestart, dateend CURRENT_TIMESTAMP, 0
-                    WHERE NOT EXISTS (
-                        SELECT 1
-                        FROM products AS P
-                        LEFT JOIN productprice PP1 ON PP1.product_id = P.id AND PP1.isspecial=1 AND PP1.deleted_yn = 0
-                        WHERE P.deleted_yn = 0 AND P.id=:productid AND IFNULL(PP1.price, 0)=:price
-                    )
-                    RETURNING id;
-                ''')
-            results = db.session.execute(sqlnewprice1, {"productid": productid, "price": form.price_special.data, "datestart": form.special_datestart, "dateend": form.special_dateend})
-            row = results.fetchone()
-            
-            db.session.commit()  
+  if (row) {
+    return true;
+  }
 
-            sql =text('''
-                    UPDATE productprice SET [deleted_yn] = 1, [deleted_at]=CURRENT_TIMESTAMP
-                    WHERE product_id = :productid AND isspecial=1 AND deleted_yn = 0 AND id!=:id
-                ''')
-            db.session.execute(sql, {"productid": productid, "price": form.price_normal.data, "id": row[0] })
-            db.session.commit()  
-
-    else:
-        sql =text('''
-                    UPDATE productprice SET [deleted_yn] = 1, [deleted_at]=CURRENT_TIMESTAMP
-                    WHERE product_id=:productid AND isspecial=1 AND deleted_yn = 0
-                ''')
-        db.session.execute(sql, {"productid": productid, "price": form.price_normal.data })
-        db.session.commit()
-
-
-# Update Existing Product
-def UpdateProduct(form, curimgid, curimgusedid, curnormprice, curspecialprice):
-
-    usedimgid = ReplaceExistingImg(form.product_id.data, form.main_mediaid.data, curimgid, curimgusedid)
-    ReplaceExistingPrice(form.product_id.data, form, curnormprice)
-    ReplaceExistingSpecialPrice(form.product_id.data, form, curspecialprice)
-
-    found = False
-    
-    sqlproduct = text('''
-                UPDATE products SET [name]=:name, [instock]=:instock, [description]=:descript, [code]=:code, 
-                    [onspecial]=:onspecial, [showonline]=:showonline, [mediaused_id]=:mediausedid
-                WHERE id=:id
-                RETURNING id;
-            ''')
-
-    result = db.session.execute(sqlproduct, 
-                                    {
-                                        "id": form.product_id.data, 
-                                        "name": form.product_name.data,
-                                        "descript": form.product_decription.data,
-                                        "code": form.product_code.data,  
-                                        "instock": form.product_stock.data,
-                                        "onspecial": 1 if form.product_special.data else 0,
-                                        "showonline": 1 if form.product_show.data else 0,
-                                        "mediausedid": usedimgid
-                                    }
-                                    )
-    row_product = result.fetchone()
-    db.session.commit()
-
-    if usedimgid != curimgusedid:
-        sqlusedimg =text('''
-                UPDATE mediaused SET  [deleted_yn] = 1, [deleted_at]=CURRENT_TIMESTAMP
-                WHERE id=:id
-            ''')
-        db.session.execute(sqlusedimg, {"id": curimgusedid})
-        db.session.commit()
-
-    if(row_product):
-        found = True
-
-    return found
-
-*/
+  return false;
+}
 
 module.exports = {
   producValidator,

@@ -240,6 +240,8 @@ class AlertPopup {
         autoOpen: true,
         overlayer: false,
         position: "center",
+        autoClose: false,
+        timer: 1000,
       },
       ...options,
     };
@@ -356,15 +358,19 @@ class AlertPopup {
         this.settings.onOpen(this);
       }
     });
+
+    if (this.settings.autoClose) {
+      setTimeout(() => {
+        this.close();
+      }, this.settings.timer);
+    }
   }
 
   close() {
-    console.log(this);
     if (this.settings?.onClose && typeof this.settings?.onClose == "function") {
       this.settings.onClose();
     }
 
-    console.log(this.popupEl);
     this.popupEl.remove();
   }
 }

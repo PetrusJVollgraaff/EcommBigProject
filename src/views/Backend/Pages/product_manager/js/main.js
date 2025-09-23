@@ -188,8 +188,8 @@ class ProductEditor {
           })
           .then((response) => {
             if (response.status == "success") {
-              //_.#callback(response.product);
-              //_.#modal.close();
+              _.#callback(response.product);
+              _.#modal.close();
 
               new AlertPopup({
                 title: "Success",
@@ -229,6 +229,7 @@ class Product {
   constructor({ elmP, obj }, callback = () => {}) {
     this.#ElmP = elmP;
     this.#Data = { ...obj };
+    this.id = this.#Data.id;
     this.#callback = callback;
 
     this.#init();
@@ -350,6 +351,7 @@ class ProductManager {
   }
 
   #editProduct(product) {
+    console.log(this.#Products);
     const idx = this.#Products.findIndex((obj) => obj.id === product.id);
     console.log(idx);
     if (idx > -1) {

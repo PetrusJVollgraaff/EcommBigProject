@@ -1,23 +1,5 @@
 const { db } = require("../../../../db.js");
 
-var productSQL = `
-        SELECT 
-          P.id, 
-          P.name, 
-          P.onspecial,
-          P.showonline,
-          CASE 
-              WHEN M.id IS NOT NULL THEN
-                  '/static/images/'|| M.name ||'/thumb'|| M.ext
-              ELSE ''
-          END AS imgpath 
-
-      FROM products AS P
-      LEFT JOIN media_used MU ON MU.id = P.mediaused_id AND MU.deleted_yn=0
-      LEFT JOIN media M ON M.id = MU.media_id AND M.deleted_yn=0
-      WHERE P.deleted_yn = 0 
-    `;
-
 var productDetailSQL = `
         SELECT 
           P.id, 
@@ -58,6 +40,8 @@ var productDetailSQL = `
 function getProductsHTML(req, res) {
   const products = db.prepare(productDetailSQL).all();
 
+  res.setHeader("Content-Security-Policy", "script-src 'self' 'unsafe-inline'");
+
   res.render("./frontend/pages/products", {
     title: "Products",
     layout: "frontend/layout/main",
@@ -73,6 +57,7 @@ function getProductHTML(req, res) {
     return res.status(404).send("Not Found.");
   }
 
+  res.setHeader("Content-Security-Policy", "script-src 'self' 'unsafe-inline'");
   res.render("./frontend/pages/product", {
     title: product.name,
     layout: "frontend/layout/main",

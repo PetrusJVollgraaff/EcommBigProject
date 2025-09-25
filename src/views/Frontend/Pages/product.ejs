@@ -24,11 +24,11 @@
 </div>
 
 <script>
-    /*addCart.addEventListener("submit", (evt) => {
+    addCart.addEventListener("submit", (evt) => {
         evt.preventDefault()
         var formData = new FormData(evt.target)
 
-        fetch("{{ url_for('views.cartpages.cart_add') }}", {
+        fetch("/cart/add", {
             method: "POST",
             body: new URLSearchParams(formData).toString(),
             headers: {
@@ -56,5 +56,5 @@
 
 
         return false;
-    })*/
+    })
 </script>

@@ -7,8 +7,7 @@ function ensureAuthenticated(req, res, next) {
 
 function ensureRole(role) {
   return function (req, res, next) {
-    if (req.isAuthenticated() && req.user && req.user.role === "role")
-      return next();
+    if (req.isAuthenticated() && req.user) return next();
     //req.flash("error", "Not authorized");
     res.redirect("/");
   };

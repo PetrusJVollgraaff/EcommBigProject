@@ -20,7 +20,6 @@ function initialize(passport) {
         return done(null, {
           id: user.id,
           username: user.username,
-          role: user.role,
         });
       return done(null, false, { message: "Password incorrect" });
     } catch (err) {
@@ -34,7 +33,7 @@ function initialize(passport) {
   passport.deserializeUser(async (id, done) => {
     try {
       const user = db
-        .prepare("SELECT id, username, role FROM users WHERE id = ?")
+        .prepare("SELECT id, username, roleId FROM users WHERE id = ?")
         .get(id);
       done(null, user || null);
     } catch (err) {

@@ -24,15 +24,25 @@ router.get("/", (req, res) => {
   });
 });
 
-router.post("/login", (req, res) => {
-  passport.authenticate("local", {
-    successRedirect: "../modules/",
-    failureRedirect: "./",
-    failureFlash: true,
-  });
+router.post("/login", (req, res, next) => {
+  console.log(req.body);
+  passport.authenticate("local", (err, user, info) => {
+    console.log(err, user, info);
+    if (err) return next(err);
+    if (!user) {
+      console.log("Login failed:", info);
+      return res.redirect("./");
+    }
+    req.logIn(user, (err) => {
+      console.log(err);
+      if (err) return next(err);
+      console.log("Login successful:", user.username);
+      return res.redirect("../modules/");
+    });
+  })(req, res, next);
 });
 
-router.post("/logout", (req, res, next) => {
+router.get("/logout", (req, res, next) => {
   req.logout((err) => {
     if (err) return next(err);
     res.redirect("/edit");

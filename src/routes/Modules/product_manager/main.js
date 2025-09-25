@@ -1,5 +1,6 @@
 const express = require("express");
 const path = require("path");
+
 const projectRoot = path.join(__dirname, "../../..");
 
 const router = express.Router();
@@ -12,7 +13,7 @@ const {
   editExistingProduct,
   removeExistingProduct,
   producValidator,
-} = require("../../../controllers/productmanager.js");
+} = require("./controllers/controller");
 
 router.use(express.urlencoded({ extended: true }));
 router.use(express.json());

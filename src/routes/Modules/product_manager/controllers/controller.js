@@ -1,4 +1,4 @@
-const { db } = require("../db.js");
+const { db } = require("../../../../db.js");
 const { body, validationResult } = require("express-validator");
 
 const producValidator = [
@@ -8,25 +8,6 @@ const producValidator = [
   body("main_mediaid").isInt({ min: 0 }).notEmpty(),
   body("price_normal").isFloat({ min: 0.0 }).notEmpty(),
   body("product_description").trim(),
-];
-
-var products = [
-  {
-    id: 1,
-    name: "Product One",
-    image: {
-      id: 1,
-      path: "/static/images/img1/thumbs.png",
-    },
-  },
-  {
-    id: 2,
-    name: "Product Two",
-    image: {
-      id: 2,
-      path: "/static/images/img2/thumbs.jpg",
-    },
-  },
 ];
 
 var productSQL = `

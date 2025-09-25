@@ -2,9 +2,9 @@ const path = require("path");
 const fs = require("fs");
 const sharp = require("sharp");
 const multer = require("multer");
-const { db } = require("../db.js");
+const { db } = require("../../../../db.js");
 
-const projectRoot = path.join(__dirname, "../");
+const projectRoot = path.join(__dirname, "../../../..");
 const imgDir = path.join(projectRoot, "/public/images");
 if (!fs.existsSync(imgDir)) fs.mkdirSync(imgDir, { recursive: true });
 

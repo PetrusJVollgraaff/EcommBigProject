@@ -1,13 +1,23 @@
 const express = require("express");
 const path = require("path");
 const router = express.Router();
+const passport = require("passport");
+const csurf = require("csurf");
 
 const projectRoot = path.join(__dirname, "../..");
 
 router.use("/static", express.static(path.join(projectRoot, "/views/backend")));
 
+//CSRF protection for non-get
+router.use(csurf());
+router.use((req, res, next) => {
+  res.locals.csrfToken = req.csrfToken();
+
+  next();
+});
+
 //login page backend
-router.get("/login", (req, res) => {
+router.get("/", (req, res) => {
   res.render("./backend/pages/login", {
     layout: "backend/layout/login", // <-- switch to backend layout
     title: "login",
@@ -15,17 +25,20 @@ router.get("/login", (req, res) => {
 });
 
 router.post("/login", (req, res) => {
-  /*passport.authenticate("local", {
-    successRedirect: "/modules/",
-    failureRedirect: "/edit/login",
+  console.log("hello", req.body);
+  var test = passport.authenticate("local", {
+    successRedirect: "../modules/",
+    failureRedirect: "./",
     failureFlash: true,
-  });*/
+  });
+
+  console.log(test);
 });
 
 router.post("/logout", (req, res, next) => {
   req.logout((err) => {
     if (err) return next(err);
-    res.redirect("/edit/login");
+    res.redirect("/edit");
   });
 });
 

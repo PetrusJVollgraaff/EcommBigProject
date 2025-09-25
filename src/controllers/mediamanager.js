@@ -107,7 +107,6 @@ function addMedia(req, res) {
       });
     });
 
-    console.log(uploadedFiles);
     res.status(200).json({ status: "success", images: uploadedFiles });
   });
 }

@@ -143,7 +143,6 @@ class ProductEditor {
 
   #setMediaSelector() {
     new MediaSelector({ elm: this.#MainImgBtn }, (data) => {
-      console.log(data);
       this.#mainMediaid = data.id;
       this.#MainImgBtn.setAttribute("title", data.name);
       this.#MainImgBtn.style.backgroundImage = `url('${data.path}')`;
@@ -351,11 +350,8 @@ class ProductManager {
   }
 
   #editProduct(product) {
-    console.log(this.#Products);
     const idx = this.#Products.findIndex((obj) => obj.id === product.id);
-    console.log(idx);
     if (idx > -1) {
-      console.log("hello");
       this.#Products[idx].setProduct(product);
     }
   }

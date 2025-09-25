@@ -60,7 +60,6 @@ class Modal {
   #loadContent(fallback) {
     if (this?.popupEl) {
       var contentCtn = this.popupEl.getElementsByClassName("content_ctn");
-      console.log(this.settings.content);
       if (this.settings.content) {
         switch (typeof this.settings.content) {
           case "string":
@@ -89,7 +88,6 @@ class Modal {
 
         fetch(request)
           .then(async (response) => {
-            console.log(response.ok);
             if (response.ok) {
               return response.text();
             }
@@ -200,7 +198,6 @@ class Modal {
       this.settings.onClose();
     }
 
-    console.log(this.popupEl);
     this.popupEl.remove();
   }
 

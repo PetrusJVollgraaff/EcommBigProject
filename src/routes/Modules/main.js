@@ -10,7 +10,7 @@ const MediaMangerRoutes = require(routepath + "/media_manager/main");
 const ProductMangerRoutes = require(routepath + "/product_manager/main");
 
 //Protect all admin routes: only admin role allowed
-//router.use(ensureAuthenticated, ensureRole("admin"));
+router.use(ensureAuthenticated, ensureRole("admin"));
 
 router.use("/static", express.static(path.join(projectRoot, "/views/backend")));
 

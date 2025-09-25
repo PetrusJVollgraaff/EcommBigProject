@@ -4,7 +4,6 @@ const { db } = require("../db.js");
 
 function initialize(passport) {
   const authenticateUser = async (username, password, done) => {
-    console.log(username, password);
     try {
       const user = db
         .prepare("SELECT * FROM users WHERE username = ?")

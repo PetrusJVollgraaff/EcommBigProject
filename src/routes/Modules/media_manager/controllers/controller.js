@@ -58,6 +58,7 @@ const upload = multer({
 }); // 5MB
 
 function getMediaHTML(req, res) {
+  console.log(req);
   res.render("./backend/pages/media_manager/index", {
     title: "Media Manager",
     layout: "backend/layout/main", // <-- switch to backend layout
@@ -81,23 +82,24 @@ function addMedia(req, res) {
     }
 
     const uploadedFiles = [];
-    /*JSON.stringify(
-      req.files.map((file) => ({
-        filename: file.filename,
-        path: file.path,
-      }))
-    );*/
 
     req.files.forEach((file) => {
       const { width, height } = sharp(file.path).metadata();
 
       const stmt = db.prepare(`
             INSERT INTO media (name, type, width, height, ext, create_at, deleted_yn, create_by_userid) 
-            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 0, 1) 
+            VALUES (:name, :type, :width, :height, :ext, CURRENT_TIMESTAMP, 0, :userid) 
             RETURNING id;
       `);
 
-      const row = stmt.get(file.folderName, "image", width, height, file.ext);
+      const row = stmt.get({
+        name: file.folderName,
+        type: "image",
+        width,
+        height,
+        ext: file.ext,
+        userid: req.user.id,
+      });
 
       shapeImage(file);
       uploadedFiles.push({
@@ -115,12 +117,12 @@ function removeMedia(req, res) {
   const { id } = req.body;
 
   const stmt = db.prepare(`
-    UPDATE medias SET deleted_at=CURRENT_TIMESTAMP, deleted_yn=1
+    UPDATE media SET deleted_by_userid=:userid, deleted_at=CURRENT_TIMESTAMP, deleted_yn=1
     WHERE id=:mediaid
     RETURNING id;
     `);
 
-  const row = stmt.get(id);
+  const row = stmt.get({ mediaid: id, userid: req.user.id });
 
   if (row) {
     res.json({ status: "success", message: "images are removes" });
@@ -141,7 +143,7 @@ async function shapeImage(file) {
 
   for (key in sizes) {
     const thumbFull = path.join(file.destination, key + file.ext);
-    await sharp(file.path).resize(300, 300, { fit: "cover" }).toFile(thumbFull);
+    await sharp(file.path).resize(sizes[key]).toFile(thumbFull);
   }
 }
 

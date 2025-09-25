@@ -129,7 +129,7 @@ function addNewProduct(req, res) {
     return res.status(400).json({ status: "error", message: errors.array() });
   }
 
-  var id = addNewProductSQL(req.body);
+  var id = addNewProductSQL(req.body, req.user.id);
 
   if (id > 0) {
     const product = getProductJSON(id);
@@ -160,7 +160,8 @@ function editExistingProduct(req, res) {
       row["imgid"],
       row["imgusedid"],
       row["normalprice"],
-      row["specialprice"]
+      row["specialprice"],
+      req.user.id
     );
 
     if (found) {
@@ -183,12 +184,12 @@ function removeExistingProduct(req, res) {
   const { id } = req.body;
 
   const stmt = db.prepare(`
-    UPDATE products SET deleted_at=CURRENT_TIMESTAMP, deleted_yn=1, deleted_by_userid=1
+    UPDATE products SET deleted_at=CURRENT_TIMESTAMP, deleted_yn=1, deleted_by_userid=:userid
     WHERE id=:mediaid
     RETURNING id;
     `);
 
-  const row = stmt.get(id);
+  const row = stmt.get({ id, userid: req.user.id });
 
   if (row) {
     res.json({ status: "success", message: "Product is removed." });
@@ -221,37 +222,37 @@ function setProductJSON(row) {
 /** ADD NEW PRODUCT DATA **/
 
 //Add New Product Image
-function AddImgSQL(imgid) {
+function AddImgSQL(imgid, userid) {
   const stmt = db.prepare(`
             INSERT INTO media_used ([media_id], [media_order], [function_as], [create_by_userid], [create_at], [deleted_yn])
-                VALUES (:imgid, 0, 'main product image', 1, CURRENT_TIMESTAMP, 0)
+                VALUES (:imgid, 0, 'main product image', :userid, CURRENT_TIMESTAMP, 0)
                 RETURNING id;
       `);
 
-  const row = stmt.get({ imgid });
+  const row = stmt.get({ imgid, userid });
   return row.id;
 }
 
 //Add New Product Prices
-function AddNewPriceSQL(productid, body) {
+function AddNewPriceSQL(productid, body, userid) {
   const { price_normal } = body;
   const stmt = db.prepare(`
         INSERT INTO product_prices ([products_id], [price], [isspecial], [create_by_userid], [create_at], [deleted_yn])
-        VALUES(:productid, :price, 0, 1, CURRENT_TIMESTAMP, 0)
+        VALUES(:productid, :price, 0, :userid, CURRENT_TIMESTAMP, 0)
       `);
 
-  stmt.run({ productid, price: price_normal });
+  stmt.run({ productid, price: price_normal, userid });
 }
 
 //Add New Product Special Prices
-function AddNewSpecialPriceSQL(productid, body) {
+function AddNewSpecialPriceSQL(productid, body, userid) {
   const { product_special, price_special, special_datestart, special_dateend } =
     body;
 
   if (typeof product_special != "undefined") {
     const stmt = db.prepare(`
         INSERT INTO product_prices ([products_id], [price], [isspecial], [specialdataStart], [specialdataEnd], [create_by_userid], [create_at], [deleted_yn])
-        VALUES(:productid, :price, 1, :datestart, :dateend, 1, CURRENT_TIMESTAMP, 0)
+        VALUES(:productid, :price, 1, :datestart, :dateend, :userid, CURRENT_TIMESTAMP, 0)
       `);
 
     stmt.run({
@@ -259,12 +260,13 @@ function AddNewSpecialPriceSQL(productid, body) {
       price: price_special,
       datestart: special_datestart,
       dateend: special_dateend,
+      userid,
     });
   }
 }
 
 //Add New Product
-function addNewProductSQL(body) {
+function addNewProductSQL(body, userid) {
   const {
     main_mediaid,
     product_name,
@@ -275,11 +277,11 @@ function addNewProductSQL(body) {
     product_show,
   } = body;
 
-  let mediausedId = AddImgSQL(main_mediaid);
+  let mediausedId = AddImgSQL(main_mediaid, userid);
 
   const stmt = db.prepare(`
     INSERT INTO products([mediaused_id], [name], [instock], [description], [code], [onspecial], [showonline], [create_by_userid], [create_at], [deleted_yn])
-    VALUES (:mediausedid, :name, :stock, :descript, :code, :onspecial, :showonline, 1, CURRENT_TIMESTAMP, 0)
+    VALUES (:mediausedid, :name, :stock, :descript, :code, :onspecial, :showonline, :userid, CURRENT_TIMESTAMP, 0)
     RETURNING id;
       `);
 
@@ -291,11 +293,12 @@ function addNewProductSQL(body) {
     code: product_code,
     onspecial: typeof product_special == "undefined" ? 0 : 1,
     showonline: typeof product_show == "undefined" ? 0 : 1,
+    userid,
   });
 
   if (row) {
-    AddNewPriceSQL(row.id, body);
-    AddNewSpecialPriceSQL(row.id, body);
+    AddNewPriceSQL(row.id, body, userid);
+    AddNewSpecialPriceSQL(row.id, body, userid);
     return row.id;
   }
 
@@ -305,13 +308,19 @@ function addNewProductSQL(body) {
 /** UPDATE PRODUCT DATA **/
 
 // Update Existing Product Image
-function ReplaceExistingImg(productid, newimgid, oldimgid, oldimgusedid) {
+function ReplaceExistingImg(
+  productid,
+  newimgid,
+  oldimgid,
+  oldimgusedid,
+  userid
+) {
   const usedimgid = oldimgusedid;
 
   if (newimgid != oldimgid) {
     const stmt = db.prepare(`
             INSERT INTO media_used ([media_id], [media_order], [function_as], [create_by_userid], [create_at], [deleted_yn])
-            SELECT :imgid, 0, 'main product image', 1, CURRENT_TIMESTAMP, 0
+            SELECT :imgid, 0, 'main product image', :userid, CURRENT_TIMESTAMP, 0
                 WHERE NOT EXISTS (
                     SELECT 1
                     FROM products AS P
@@ -322,7 +331,7 @@ function ReplaceExistingImg(productid, newimgid, oldimgid, oldimgusedid) {
               RETURNING id;
       `);
 
-    const row = stmt.get({ imgid, productid });
+    const row = stmt.get({ imgid, productid, userid });
     usedimgid = row.id;
   }
 
@@ -330,12 +339,12 @@ function ReplaceExistingImg(productid, newimgid, oldimgid, oldimgusedid) {
 }
 
 // Update Existsing Product Prices
-function ReplaceExistingPrice(productid, body, curnormprice) {
+function ReplaceExistingPrice(productid, body, curnormprice, userid) {
   const { price_normal } = body;
   if (price_normal != curnormprice) {
     const stmt = db.prepare(`
             INSERT INTO product_prices ([products_id], [price], [isspecial], [create_by_userid], [create_at], [deleted_yn])
-                SELECT :productid, :price, 0, 1, CURRENT_TIMESTAMP, 0
+                SELECT :productid, :price, 0, :userid, CURRENT_TIMESTAMP, 0
                 WHERE NOT EXISTS (
                     SELECT 1
                     FROM products AS P
@@ -345,12 +354,12 @@ function ReplaceExistingPrice(productid, body, curnormprice) {
                 RETURNING id;
       `);
 
-    stmt.run({ productid, price: price_normal });
+    stmt.run({ productid, price: price_normal, userid });
   }
 }
 
 // Update Existsing Product Special Prices
-function ReplaceExistingSpecialPrice(productid, body, curspecialprice) {
+function ReplaceExistingSpecialPrice(productid, body, curspecialprice, userid) {
   const { product_special, price_special, special_datestart, special_dateend } =
     body;
 
@@ -358,7 +367,7 @@ function ReplaceExistingSpecialPrice(productid, body, curspecialprice) {
     if (price_special != curspecialprice) {
       const stmt1 = db.prepare(`
             INSERT INTO product_prices ([products_id], [price], [isspecial], [create_by_userid], [create_at], [deleted_yn])
-                SELECT :productid, :price, 0, 1, CURRENT_TIMESTAMP, 0
+                SELECT :productid, :price, 0, :userid, CURRENT_TIMESTAMP, 0
                 WHERE NOT EXISTS (
                     SELECT 1
                     FROM products AS P
@@ -368,22 +377,22 @@ function ReplaceExistingSpecialPrice(productid, body, curspecialprice) {
                 RETURNING id;
       `);
 
-      var row = stmt1.get({ productid, price: price_special });
+      var row = stmt1.get({ productid, price: price_special, userid });
 
       const stmt2 = db.prepare(`
-            UPDATE product_prices SET [deleted_yn] = 1, [deleted_at]=CURRENT_TIMESTAMP
+            UPDATE product_prices SET [deleted_yn] = 1, [deleted_at]=CURRENT_TIMESTAMP, [deleted_by_userid]=:userid
             WHERE products_id = :productid AND isspecial=0 AND deleted_yn = 0 AND id!=:id
       `);
 
-      stmt2.run({ productid, id: row.id });
+      stmt2.run({ productid, id: row.id, userid });
     }
   } else {
     const stmt = db.prepare(`
-          UPDATE product_prices SET [deleted_yn] = 1, [deleted_at]=CURRENT_TIMESTAMP
+          UPDATE product_prices SET [deleted_yn] = 1, [deleted_at]=CURRENT_TIMESTAMP, [deleted_by_userid]=:userid
           WHERE products_id=:productid AND isspecial=1 AND deleted_yn = 0
       `);
 
-    stmt.run({ productid });
+    stmt.run({ productid, userid });
   }
 }
 
@@ -393,7 +402,8 @@ function UpdateProduct(
   curimgid,
   curimgusedid,
   curnormprice,
-  curspecialprice
+  curspecialprice,
+  userid
 ) {
   const {
     main_mediaid,
@@ -410,11 +420,12 @@ function UpdateProduct(
     product_id,
     main_mediaid,
     curimgid,
-    curimgusedid
+    curimgusedid,
+    userid
   );
 
-  ReplaceExistingPrice(product_id, body, curnormprice);
-  ReplaceExistingSpecialPrice(product_id, body, curspecialprice);
+  ReplaceExistingPrice(product_id, body, curnormprice, userid);
+  ReplaceExistingSpecialPrice(product_id, body, curspecialprice, userid);
 
   const stmt = db.prepare(`
       UPDATE products SET [name]=:name, [instock]=:instock, [description]=:descript, [code]=:code, 

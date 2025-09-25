@@ -16,6 +16,14 @@ router.use((req, res, next) => {
   next();
 });
 
+router.use((err, req, res, next) => {
+  if (err && err.code === "EBADCSRFTOKEN") {
+    return res.status(403).send("Form tampered with");
+  }
+
+  res.status(500).send("Internal Server Error");
+});
+
 //login page backend
 router.get("/", (req, res) => {
   res.render("./backend/pages/login", {
@@ -25,16 +33,13 @@ router.get("/", (req, res) => {
 });
 
 router.post("/login", (req, res, next) => {
-  console.log(req.body);
   passport.authenticate("local", (err, user, info) => {
-    console.log(err, user, info);
     if (err) return next(err);
     if (!user) {
       console.log("Login failed:", info);
       return res.redirect("./");
     }
     req.logIn(user, (err) => {
-      console.log(err);
       if (err) return next(err);
       console.log("Login successful:", user.username);
       return res.redirect("../modules/");

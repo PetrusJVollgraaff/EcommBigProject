@@ -15,7 +15,7 @@ var productDetailSQL = `
           IFNULL(MU.id, 0) AS imgusedid,
           CASE 
               WHEN M.id IS NOT NULL THEN
-                  '/static/images/'|| M.name ||'/thumb'|| M.ext
+                  '/static/images/'|| M.name ||'/medium'|| M.ext
               ELSE ''
           END AS imgpath,
 

@@ -3,11 +3,11 @@ const path = require("path");
 const router = express.Router();
 
 //productpages
-const Productpages = require("./products.js");
+const Productpages = require("./products/main.js");
 router.use("/products", Productpages);
 
 //cartpages
-const Cartpages = require("./cart.js");
+const Cartpages = require("./cart/main.js");
 router.use("/cart", Cartpages);
 
 //homepage

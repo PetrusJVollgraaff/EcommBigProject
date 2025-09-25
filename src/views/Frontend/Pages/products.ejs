@@ -1,1 +1,18 @@
 <h1>Products</h1>
+
+
+<% products.forEach(p=> { %>
+    <div class="product_card" data-id="<%= p.id %>">
+        <div class="header">
+            <%= p.name %>
+        </div>
+        <img src="<%= p.imgpath%>">
+        <div class="price">
+            $<%= p.normalprice %>
+        </div>
+        <button type="button" onclick="window.location.href='/products/<%= p.id %>'">
+            View
+        </button>
+    </div>
+
+    <% }) %>

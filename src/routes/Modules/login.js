@@ -25,17 +25,11 @@ router.get("/", (req, res) => {
 });
 
 router.post("/login", (req, res) => {
-  console.log("hello", req.body);
-  passport.authenticate("local", (err, user, info) => {
-    console.log(err);
-    console.log(user);
-    console.log(info);
-  });
-  /*{
+  passport.authenticate("local", {
     successRedirect: "../modules/",
     failureRedirect: "./",
     failureFlash: true,
-  } */
+  });
 });
 
 router.post("/logout", (req, res, next) => {

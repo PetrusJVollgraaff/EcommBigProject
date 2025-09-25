@@ -8,7 +8,7 @@ const {
   getMediasJSON,
   addMedia,
   removeMedia,
-} = require("../../../controllers/mediamanager.js");
+} = require("./controllers/controller");
 
 router.use(express.json());
 

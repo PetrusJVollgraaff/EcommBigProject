@@ -3,16 +3,15 @@ const path = require("path");
 const router = express.Router();
 
 //productpages
-const Productpages = require("./products.js");
-router.use("/products", Productpages);
-
-//cartpages
-const Cartpages = require("./cart.js");
-router.use("/cart", Cartpages);
-
-//homepage
 router.get("/", (req, res) =>
-  res.render("./frontend/pages/home", {
+  res.render("./frontend/pages/products", {
+    title: "Products",
+    layout: "frontend/layout/main",
+  })
+);
+
+router.get("/:id", (req, res) =>
+  res.render("./frontend/pages/products", {
     title: "My E-commerce",
     layout: "frontend/layout/main",
   })

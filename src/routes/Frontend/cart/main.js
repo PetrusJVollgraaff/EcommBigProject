@@ -6,7 +6,7 @@ const cart = require("./controller/controller.js");
 
 //cart
 router.get("/", (req, res) =>
-  res.render("./frontend/pages/cart", {
+  res.render("./frontend/pages/cartpages/cart", {
     title: "My E-commerce",
     layout: "frontend/layout/main",
     cart: cart.getCart(req),

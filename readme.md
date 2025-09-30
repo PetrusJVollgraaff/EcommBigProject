@@ -29,7 +29,7 @@ http://localhost:3000
 access the backend
 
 ```
-http://localhost:3000/edit
+http://127.0.0.1:3000/edit
 Admin user created: admin / adminpass123
 
 ```

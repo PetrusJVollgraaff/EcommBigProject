@@ -42,7 +42,7 @@ function getProductsHTML(req, res) {
 
   res.setHeader("Content-Security-Policy", "script-src 'self' 'unsafe-inline'");
 
-  res.render("./frontend/pages/products", {
+  res.render("./frontend/pages/productpages/products", {
     title: "Products",
     layout: "frontend/layout/main",
     products,
@@ -58,7 +58,7 @@ function getProductHTML(req, res) {
   }
 
   res.setHeader("Content-Security-Policy", "script-src 'self' 'unsafe-inline'");
-  res.render("./frontend/pages/product", {
+  res.render("./frontend/pages/productpages/product", {
     title: product.name,
     layout: "frontend/layout/main",
     product,

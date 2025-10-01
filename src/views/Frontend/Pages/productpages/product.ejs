@@ -1,60 +1,70 @@
+<link rel="stylesheet" href="/products/static/css/main.css">
 <h1>Product</h1>
 
-<div>
-    <div class="">
-        <img src="<%= product.imgpath %>" alt="">
-    </div>
-    <div>
-        <h1>
-            <%= product.name %>
-        </h1>
-        <p>
-            <%= product.description %>
-        </p>
-    </div>
-    <div>
-        <form id="addCart">
-            <input type="number" name="id" hidden value="<%= product.id %>">
-            <div>
-                <input type="number" name="qty" id="" min="0" value="1">
+<div class="product_preview_ctn">
+    <div class="product_preview">
+        <div class="left_ctn">
+            <img src="<%= product.imgpath %>" alt="">
+        </div>
+        <div class="right_ctn">
+            <div class="header">
+                <h1>
+                    <%= product.name %>
+                </h1>
+                <h1>
+                    <%= product.normalprice %>
+                </h1>
             </div>
-            <button type="submit">Add to Cart</button>
-        </form>
+            <div class="spacer">
+                <div>
+                    <p>
+                        <%= product.description %>
+                    </p>
+                </div>
+                <div>
+                    <form id="addCart">
+                        <input type="number" name="id" hidden value="<%= product.id %>">
+                        <div>
+                            <input type="number" name="qty" id="" min="0" value="1">
+                        </div>
+                        <button type="submit">Add to Cart</button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
+    <script>
+        addCart.addEventListener("submit", (evt) => {
+            evt.preventDefault()
+            var formData = new FormData(evt.target)
 
-<script>
-    addCart.addEventListener("submit", (evt) => {
-        evt.preventDefault()
-        var formData = new FormData(evt.target)
+            fetch("/cart/add", {
+                method: "POST",
+                body: new URLSearchParams(formData).toString(),
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded ",
+                },
+            })
+                .then((response) => {
+                    console.log(response.ok);
+                    if (response.ok) return response.json();
 
-        fetch("/cart/add", {
-            method: "POST",
-            body: new URLSearchParams(formData).toString(),
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded ",
-            },
+                    // Create error manually and attach custom data
+                    const data = response.json();
+                    const error = new Error(`Response status: ${response.status}`);
+                    error.data = data; // 👈 custom property
+                    throw error;
+                })
+                .then((response) => {
+                    console.log(response)
+
+                })
+                .catch((err) => {
+                    console.error(err.message);
+                    //this.callback(err.data);
+                });
+
+
+            return false;
         })
-            .then((response) => {
-                console.log(response.ok);
-                if (response.ok) return response.json();
-
-                // Create error manually and attach custom data
-                const data = response.json();
-                const error = new Error(`Response status: ${response.status}`);
-                error.data = data; // 👈 custom property
-                throw error;
-            })
-            .then((response) => {
-                console.log(response)
-
-            })
-            .catch((err) => {
-                console.error(err.message);
-                //this.callback(err.data);
-            });
-
-
-        return false;
-    })
-</script>
+    </script>

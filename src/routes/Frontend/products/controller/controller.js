@@ -34,7 +34,7 @@ var productDetailSQL = `
       LEFT JOIN media M ON M.id = MU.media_id AND M.deleted_yn=0
       LEFT JOIN product_prices PP1 ON PP1.products_id = P.id AND PP1.isspecial=0 AND PP1.deleted_yn = 0
       LEFT JOIN product_prices PP2 ON PP2.products_id = P.id AND PP2.isspecial=1 AND PP2.deleted_yn = 0          
-      WHERE P.deleted_yn = 0
+      WHERE P.deleted_yn = 0 AND P.showonline = 1
     `;
 
 function getProductsHTML(req, res) {

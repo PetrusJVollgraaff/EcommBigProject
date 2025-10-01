@@ -1,0 +1,32 @@
+.cart_list_ctn {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.cart_list_ctn .product_card {
+  max-width: 500px;
+  border-radius: 5px;
+  box-shadow: 0px 0px 5px 5px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  width: 500px;
+  display: flex;
+  flex-direction: row;
+}
+
+.cart_list_ctn .product_card > img {
+  width: 300px;
+  height: 300px;
+  object-fit: contain;
+}
+
+.cart_list_ctn .product_card > div {
+  padding: 5px;
+  width: 250px;
+  border-left: 1px solid lightgray;
+}
+
+.cart_list_ctn .product_card .price_table > div > h3 {
+  display: flex;
+  justify-content: space-between;
+}

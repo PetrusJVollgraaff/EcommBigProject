@@ -1,18 +1,17 @@
 const express = require("express");
 const path = require("path");
 const router = express.Router();
+const projectRoot = path.join(__dirname, "../../..");
 
 const cart = require("./controller/controller.js");
 
-//cart
-router.get("/", (req, res) =>
-  res.render("./frontend/pages/cartpages/cart", {
-    title: "My E-commerce",
-    layout: "frontend/layout/main",
-    cart: cart.getCart(req),
-    total: cart.getTotal(),
-  })
+router.use(
+  "/static",
+  express.static(path.join(projectRoot, "/views/frontend/pages/cartpages"))
 );
+
+//cart
+router.get("/", cart.CartTemplate);
 
 router.post("/add", cart.addToCart);
 

@@ -1,19 +1,25 @@
 <link rel="stylesheet" href="/products/static/css/main.css">
 <h1>Products</h1>
 
+<div class="products_list">
+    <% products.forEach(p=> { %>
+        <div class="product_card" data-id="<%= p.id %>">
 
-<% products.forEach(p=> { %>
-    <div class="product_card" data-id="<%= p.id %>">
-        <div class="header">
-            <%= p.name %>
-        </div>
-        <img src="<%= p.imgpath%>">
-        <div class="price">
-            $<%= p.normalprice %>
-        </div>
-        <button type="button" onclick="window.location.href='/products/<%= p.id %>'">
-            View
-        </button>
-    </div>
+            <img src="<%= p.imgpath%>">
+            <div class="header">
+                <h3>
+                    <%= p.name %>
+                </h3>
+                <div class="price">
+                    <h3>$<%= p.normalprice %>
+                    </h3>
+                </div>
+            </div>
 
-    <% }) %>
+            <button type="button" onclick="window.location.href='/products/<%= p.id %>'">
+                View
+            </button>
+        </div>
+
+        <% }) %>
+</div>
